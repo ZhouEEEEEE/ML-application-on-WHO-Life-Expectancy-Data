@@ -1,5 +1,5 @@
 ---
-title: "JSC370 HW5(Pre-Final project) Data-Wranggling"
+title: "JSC370-Final project Data-Wranggling"
 author: "Shiyuan Zhou"
 output: 
  html_document:

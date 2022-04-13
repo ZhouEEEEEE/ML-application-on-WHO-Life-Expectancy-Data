@@ -1,7 +1,7 @@
-name: "Shiyuan Zhou HW5"
+name: "Shiyuan Zhou Final Project"
 output_dir: "."
 navbar:
-  title: "JSC370 HW5-Shiyuan Zhou"
+  title: "JSC370 Final Project-Shiyuan Zhou"
   left:
     - text: "Home-Intruduction"
       icon: fa-home fa-lg
@@ -17,7 +17,7 @@ navbar:
       href: page3.html
   right:
     - icon: fa-github fa-lg
-      href: https://github.com/ZhouEEEEEE/JSC-370-HW5
+      href: https://github.com/ZhouEEEEEE/JSC370-Final-Project/tree/main
     - icon: fa-linkedin-square
       href: https://www.linkedin.com/in/shiyuan-zhou-064540212/
 output:

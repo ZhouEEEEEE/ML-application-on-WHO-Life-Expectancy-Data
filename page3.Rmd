@@ -1,5 +1,5 @@
 ---
-title: "JSC370 HW5(Pre-Final project) Visualizations"
+title: "JSC370-Final project Visualizations"
 author: "Shiyuan Zhou"
 output: 
     html_document:
