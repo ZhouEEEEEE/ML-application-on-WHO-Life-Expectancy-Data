@@ -1,0 +1,133 @@
+---
+title: "JSC370 HW5(Pre-Final project) Data Source and Examination"
+author: "Shiyuan Zhou"
+output: 
+    html_document:
+        toc: TRUE
+        toc_float: TRUE
+---
+<br>
+
+<br>
+
+## Data Source
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+library(data.table)
+library(dtplyr)
+library(dplyr)
+library(ggplot2)
+library(mgcv)
+library(zoo)
+library(leaflet)
+library(ggpubr)
+```
+
+The Data that I used to answer my research question is based on the WHO data and published on Kaggle by Kumar Rajarshi. This dataset includes values social factors of 193 countries from 2000 to 2015 and the life expectancy in age. In our research question, we are aim to compare the impact of government health expenditure and Human Development Index on life expectancy. These two predictors are represent by 'Total expenditure' and 'Income composition of resources' in our dataset. The target is life expectancy. Since we also stated that social factors may have a big difference between developed and developing countries. We sill also include the binary variable 'Status' that idicate the development status of a country. All of these variables will change across years. Here are the variable details.
+
+life expectancy: Life Expectancy in age
+Total expenditure: General government expenditure on health as a percentage of total government expenditure (%)
+Income composition of resources: Human Development Index in terms of income composition of resources (index ranging from 0 to 1)
+Status: Developed or Developing status
+
+Link of data: https://www.kaggle.com/kumarajarshi/life-expectancy-who
+```{r include=FALSE}
+data <- read.csv('Life Expectancy Data.csv', check.names = F)
+```
+
+
+
+\newpage
+
+<br>
+
+<br>
+
+## Data Checking
+
+
+
+Before answering our research question, we need to do Exploratory Data Analysis first to find issues in our data, clean our data, and make summary statistics, plots, and graphs for our key variables.
+
+### Check number of missing values in each column
+
+
+```{r echo=FALSE}
+num_na <-sapply(data, function(x) sum(length(which(is.na(x)))))
+knitr::kable(data.frame(num_na), caption = "Number of missing values for each variable")
+```
+
+The table I presented is the number of missing values in each columns. For example, there are 167 missing values in Income composition of resources. We will do the missing value imputation in the next section.
+
+### Check dimensions of our data
+
+```{r echo=FALSE}
+s1 <- data %>%
+  summarise(
+    axis = c("num_observations", "num_variables"),
+    value = c(nrow(data), ncol(data))
+  )
+
+knitr::kable(s1, caption = "Summery table of the dimensions of our data")
+
+```
+We have 2937 number of observations and 22 number of variables in our dataset.
+
+### Check the summary statistics of required numeric variables
+
+```{r echo=FALSE}
+s2 <- data[, c(4, 14, 21)] %>%
+  summary()
+
+knitr::kable(as.array(s2), caption = "Summary statistics of required variables")
+
+```
+The summary statistics of key variables help us to find the issues and reliability of our data. According to the summary table we get, variable 'Life expectancy' and 'Total expenditure' do not have big issues and in our estimated bound(life expectancy should be greater than 0 and less than 100, total expenditure should be greater than 0 and less than 100 since it represents proportion). However, the variable 'income composition of resources' has minimum values equals to 0. Since this variable indicate human development index, its impossible to have 0 values. According to the worldpopulationreview.com, the country with lowest HDI in 2019 is Niger with 0.394. Hence, 0 income composition should be removed from the data set in order to prevent wrong model fitting.
+
+```{r echo=FALSE}
+data <- data[ which(data$ `Income composition of resources` > 0.0), ]
+```
+
+We removed the observations with 0 income composition and the new summary statistics is as followed.
+
+```{r echo=FALSE}
+snew <- data[, c(4, 14, 21)] %>%
+  summary()
+
+knitr::kable(as.array(snew), caption = "New summary statistics of required variables")
+
+```
+
+
+\newpage
+
+
+### Check Distribution of required variables
+
+We need to check the distribution of our variables. This helps to determine outliers, skewness, and whether it is appropriate to fit the model.
+
+```{r warning=FALSE, echo=FALSE, caption = "Check Distribution of required variables"}
+hs <- ggplot(data = data) + 
+ geom_histogram(mapping = aes(x = `Life expectancy`), bins = 40, fill = "#8250C4")  +
+ labs(x = "life expectancy in age", title = "Histogram of life expectancy")
+
+hs1 <- ggplot(data = data) + 
+ geom_histogram(mapping = aes(x = `Total expenditure`), bins = 40, fill = "#8250C4")  +
+ labs(x = "total expenditure", title = "Histogram of total health expenditure")
+
+hs2 <- ggplot(data = data) + 
+ geom_histogram(mapping = aes(x = `Income composition of resources`), bins = 40, fill = "#8250C4")  +
+ labs(x = "Income composition of resources(ICR)", title = "Histogram of ICR")
+
+ba <- ggplot(data = data) + 
+ geom_bar(mapping = aes(x = `Status`), fill = "#118DFF") +
+ labs(title = "Barchart of development status") +
+  theme_light()
+
+ggarrange(hs, hs1, hs2, ba, ncol = 2, nrow = 2)
+
+```
+According to the histograms we have for those three numeric variables, their distribution is almost normal, indicating linear model may be better options. However, there are also several issues. Firstly, the distribution of ICR is bimodal, the distribution of life expectancy is left skewed, and the distribution of total health expenditure is right-skewed. Secondly, the peak value of life expectancy and health expenditure have a very high count, which may pull our model become more centralized. Thirdly, according to the bar chart, the number of  developing county is much more that that of developed country, which means, if we add status variable to our model, the data of developing country may pull our model and become biased.
+
+<br>
+<br>

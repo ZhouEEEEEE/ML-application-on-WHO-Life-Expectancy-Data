@@ -1,0 +1,125 @@
+---
+title: "JSC370 HW5(Pre-Final project) Data-Wranggling"
+author: "Shiyuan Zhou"
+output: 
+ html_document:
+  toc: True
+  toc_float: True
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br>
+
+In this page, I will present the data wranggling processes for my final project.
+
+<br>
+
+## Data Wranggling
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+library(data.table)
+library(dtplyr)
+library(dplyr)
+library(ggplot2)
+library(mgcv)
+library(zoo)
+library(leaflet)
+library(ggpubr)
+```
+
+```{r include=FALSE}
+data <- read.csv('Life Expectancy Data.csv', check.names = F)
+```
+
+### Missing values imputation
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+Sys.setenv(LANGUAGE = "en")
+```
+
+```{r include = FALSE, echo=FALSE}
+for(i in 1:ncol(data)) {
+  data[ , i][is.na(data[ , i])] <- mean(data[ , i], na.rm = TRUE)
+}
+```
+
+
+Firstly, we need to handle the missing values by imputation. We use mean value of current column to impute by for looping each column. 
+
+
+```{r echo=FALSE}
+
+ms <- data.frame(number_of_NAs = sum(is.na(data)))
+
+knitr::kable(ms, caption = "Number of missing values in currect dataset")
+
+```
+
+After imputation, we find the number of missing values is zero.
+
+
+### Create new variable
+
+To do further data exploration on different types of plots, we need both numeric and categorical 'Total expenditure' and 'Income composition of resources'. Converting current numeric variables to categorical variables helps us on stacked histograms, statistical summary graph, and etc. In many statistical research on social factors, health expenditure and HDI are always represented by different levels.
+
+Create a new categorical variable named "expenditure_level" using total expenditure on health of a country. (rare total expenditure < 3; low total expenditure 3-5; mild total expenditure 5-9; high total expenditure > 9) and a new categorical variable named "hdi_level" indicating level of income composition of resources of countries(low income composition < 0.55; medium income composition 0.55-0.7; high income composition 0.7-0.8; very high income composition > 0.8). Additionally, we should use factor() function to give our levels an order for future convenience.
+
+```{r echo=FALSE}
+dt <- data.table(data)
+
+dta <- dt[, expenditure_level := case_when(dt[, `Total expenditure`] < 3 ~ "low", 
+                               dt[, `Total expenditure`] <= 5 ~ "medium",
+                               dt[, `Total expenditure`] <= 9 ~ "high",
+                               dt[, `Total expenditure`] > 9 ~ "very high")
+      ]
+
+dt1 <- dta[, hdi_level := case_when(dta[, `Income composition of resources`] < 0.55 ~ "low", 
+                               dta[, `Income composition of resources`] <= 0.7 ~ "medium",
+                               dta[, `Income composition of resources`] <= 0.8 ~ "high",
+                               dta[, `Income composition of resources`] > 0.8 ~ "very high")]
+
+dt1$expenditure_level <- factor(dt1$expenditure_level, levels = c("low", "medium", "high", "very high"))
+dt1$hdi_level <- factor(dt1$hdi_level, levels = c("low", "medium", "high", "very high"))
+
+sexp <- dt1 %>% group_by(expenditure_level) %>%
+  summarise(
+    min_exp = min(`Total expenditure`, na.rm = TRUE),
+    max_exp = max(`Total expenditure`, na.rm = TRUE),
+    count = n()
+  ) %>% arrange(expenditure_level)
+knitr::kable(sexp, caption = "Summery table of min total expenditure, max total expenditure, and number of observations for each level of total expenditure")
+
+shdi <- dt1 %>% group_by(hdi_level) %>%
+  summarise(
+    min_exp = min(`Income composition of resources`, na.rm = TRUE),
+    max_exp = max(`Income composition of resources`, na.rm = TRUE),
+    count = n()
+  ) %>% arrange(hdi_level)
+knitr::kable(shdi, caption = "Summery table of min income composition of resources, max income composition of resources, and number of observations for each level of HDI
+")
+
+```
+
+
+```{r warning=FALSE, echo=FALSE, caption = "Barchart of expenditure level", fig.width=8, fig.height=3}
+expl <- ggplot(data = dt1) + 
+ geom_bar(mapping = aes(x = expenditure_level), fill = "#118DFF") +
+ labs(title = "Barchart of expenditure level") +
+  theme_light()
+
+hdi_l <- ggplot(data = dt1) + 
+ geom_bar(mapping = aes(x = hdi_level), fill = "#118DFF") +
+ labs(title = "Barchart of HDI level") +
+  theme_light()
+
+ggarrange(expl, hdi_l, ncol = 2, nrow = 1)
+
+```
+
+For most of the observations, they spend high level of health expenditure. There are fewer observations have low and very high health expenditure. However, for HDI level, most of the counties have low HDI level and the number of observations for each level do not have big gap.
+
+<br>
+<br>

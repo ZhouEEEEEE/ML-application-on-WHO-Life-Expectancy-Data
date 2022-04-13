@@ -1,0 +1,27 @@
+name: "Shiyuan Zhou HW5"
+output_dir: "."
+navbar:
+  title: "JSC370 HW5-Shiyuan Zhou"
+  left:
+    - text: "Home-Intruduction"
+      icon: fa-home fa-lg
+      href: index.html
+    - text: "Data Scource"
+      icon: fa-database fa-lg
+      href: page1.html
+    - text: "Data Wranggling"
+      icon: fa-cogs fa-lg
+      href: page2.html
+    - text: "Interactive Visualization"
+      icon: fa-picture-o fa-lg
+      href: page3.html
+  right:
+    - icon: fa-github fa-lg
+      href: https://github.com/ZhouEEEEEE/JSC-370-HW5
+    - icon: fa-linkedin-square
+      href: https://www.linkedin.com/in/shiyuan-zhou-064540212/
+output:
+  html_document:
+    theme: cosmo
+    include:
+      after_body: footer.html

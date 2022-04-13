@@ -1,0 +1,16 @@
+
+# JSC370 HW5(Pre-Final project) Introduction
+
+How humans can live longer is one of the most debated topics in human history. In an era of rapid advances in medicine, education, and technology, human health has improved significantly but will humans necessarily live longer? The differences between countries are not only due to race and region but the imbalance on health care and medical technologies across countries is everywhere. However, in many cases, it is difficult to spread or teach advanced medical treatments to other countries. Does the absence of advanced medical treatments determines lower average life expectancy? Obviously, the answer is no. Medical treatment is not the only factor that determines the life expectancy of human beings but also the climate and environment, social factors, etc.
+
+In fact, most of the influencing factors come from the government and the social organizations involved. We have a certain measure of whether the government is making a difference in humanistic care, which is the Human Development Index (HDI). The HDI is defined as a summary measure of average achievement in key dimensions of human development, like health. Also, social care as well as health care development cannot be achieved without the government expenditure. That is, at the theoretical level, both the HDI and government expenditure on health care may have an impact on the health of people, leading to an increase in their average life expectancy. However, governments' decisions heavily depends on the level of development of the country, i.e., whether a country is a developed country or not also affects the health policy and the standard of living of the population. These thoughts have led me to wonder whether life expectancy has a stronger relationship between human development index or government health care spending. Additionally, whether these relationships will be altered by the degree of development.
+
+Github Repository(For midterm project): https://github.com/ZhouEEEEEE/JSC370-Midterm.git
+
+## Research Questions
+
+-   1\. Is government health expenditure have higher impact on life expectancy than Human Development Index?
+
+-   2\. Does it also depends on the development status of the country?
+
+-   3\. What are the important features that could help to predict life expectancy?
