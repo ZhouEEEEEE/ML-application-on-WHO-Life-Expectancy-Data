@@ -34,6 +34,10 @@ library(caret)
 The Data that I used to answer my research question is based on the WHO data and published on Kaggle by Kumar Rajarshi. This dataset includes values social factors of 193 countries from 2000 to 2015 and the life expectancy in age. In our research question, we are aim to compare the impact of government health expenditure and Human Development Index on life expectancy. These two predictors are represent by 'Total expenditure' and 'Income composition of resources' in our data-set. The target is life expectancy. Since we also stated that social factors may have a big difference between developed and developing countries. We sill also include the binary variable 'Status' that indicate the development status of a country. All of these variables will change across years.
 
 Link of data: https://www.kaggle.com/kumarajarshi/life-expectancy-who
+
+We also used a data-set that help us in visualizations from: https://www.kaggle.com/datasets/andradaolteanu/country-mapping-iso-continent-region?resource=download.
+This is not our main data and all the data exploration part is focusing on our previous main data.
+
 ```{r include=FALSE}
 data <- read.csv('./data/Life Expectancy Data.csv', check.names = F)
 ```
