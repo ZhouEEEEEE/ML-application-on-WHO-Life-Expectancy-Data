@@ -1,5 +1,5 @@
 ---
-title: "JSC370 Final Project"
+title: "JSC370 Final Project - Life Expectancy"
 author: "Shiyuan Zhou"
 date: "2022/4/12"
 output:
@@ -83,7 +83,7 @@ This is not our main data and all the data exploration part is focusing on our p
 
 
 ```{r include=FALSE}
-data <- read.csv('Life Expectancy Data.csv', check.names = F)
+data <- read.csv('./data/Life Expectancy Data.csv', check.names = F)
 ```
 
 ## Exploratory Data Analysis
@@ -415,7 +415,7 @@ According to our scatter plot for life expectancy versus HIV/AIDS deaths, we can
 
 ### Scatterplot of Life Expectancy vs Adult-Mortality for each level HDI level
 
-This plot is shown in the 'Plot 2' under the interactive visualization section in page: https://zhoueeeeee.github.io/JSC370-Final-Project/
+This plot is shown in the same title under the interactive visualization section in page: https://zhoueeeeee.github.io/JSC370-Final-Project/page2.html
 
 Adult Mortality: Adult Mortality Rates of both sexes (probability of dying between 15 and 60 years per 1000 population)
 
@@ -423,19 +423,19 @@ According to the plot we have for Life Expectancy vs Adult-Mortality in 2013. We
 
 ### Line Graph of Life Expectancy vs Income Composition of Resources for each Sub-region Group of Country
 
-This plot is shown in the 'Plot 3-A' under the interactive visualization section in page: https://zhoueeeeee.github.io/JSC370-Final-Project/
+This plot is shown in the same title under the interactive visualization section in page: https://zhoueeeeee.github.io/JSC370-Final-Project/page2.html
 
 In this line graph, we have a line for life expectancy vs income composition of resources for a country. To make the graph clearer, I grouped countries into different sub-region of their continents. We can investigate that, generally, higher income composition of resources result in higher life expectancy in most of the countries. Hence, we might conclude that there is a positive relationship between life expectancy and income composition of resources, which is Human Development Index by this graph. Furthermore, we could also see that region sub-Saharan Africa had low HDI and low life expectancy, which may due to their poverty issues. Regions in Europe and 'Australia and New Zealand' had pretty high HDI and high life expectancy. We removed countries 'Haiti', 'United Kingdom of Great Britain and Northern Ireland', 'United Republic of Tanzania', 'Cote d'Ivoire', and 'Republic of Korea' since their ICR values are imputed as they were missing in data collection.
 
 ### Line Graph of Life Expectancy vs Total Expenditure for each Sub-region Group of Country
 
-This plot is shown in the 'Plot 3-B' under the interactive visualization section in page: https://zhoueeeeee.github.io/JSC370-Final-Project/
+This plot is shown in the same title under the interactive visualization section in page: https://zhoueeeeee.github.io/JSC370-Final-Project/page2.html
 
 To compare with the line graph we have for HDI, a line graph of total health expenditure versus life expectancy was also made. We cannot see any clear relationship between those two variables, which means health expenditure might be a less effective factor than HDI. Most of the regions having countries that across each level of expenditure. However, countries in sub-Saharan African also had lower life expectancy values.
 
 ### Stacked Histogram of Schooling by Life Expectancy Levels
 
-This plot is shown in the 'Plot 4' under the interactive visualization section in page: https://zhoueeeeee.github.io/JSC370-Final-Project/
+This plot is shown in the same title under the interactive visualization section in page: https://zhoueeeeee.github.io/JSC370-Final-Project/page2.html
 
 Schooling: Number of years of Schooling(years)
 

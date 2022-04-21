@@ -24,7 +24,7 @@ navbar:
     - icon: fa-linkedin-square
       href: https://www.linkedin.com/in/shiyuan-zhou-064540212/
     - icon: fa-file-pdf-o
-      href: https://github.com/ZhouEEEEEE/JSC370-Final-Project/raw/main/FP%20rmd%20file%20and%20pdf/370-Final-Project.pdf
+      href: https://github.com/ZhouEEEEEE/JSC370-Final-Project/raw/main/FP%20rmd%20file%20and%20pdf/FP-rmd-file.pdf
 output:
   html_document:
     theme: cosmo
