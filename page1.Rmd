@@ -180,7 +180,7 @@ To have more insights on their relationship with life expectancy, we also made v
 <br>
 <br>
 
-### Data Wranggling
+### Data Wrangling
 
 ```{r echo=FALSE, warning=FALSE}
 for(i in 1:ncol(data)) {

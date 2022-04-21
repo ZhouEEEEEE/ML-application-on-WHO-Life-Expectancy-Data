@@ -215,7 +215,7 @@ ggarrange(le, hdi, am, BMI, te, st, ncol = 3, nrow = 2)
 ```
 To have more insights on their relationship with life expectancy, we also made variable 'life_expectancy_level' for different levels of ages only for EDA. The distribution of life expectancy and total expenditure is quite normal but life expectancy is left-skewed. For HDI(Income composition of resources) and BMI, we can see that, higher level of life expectancy concentrated on higher HDI, which may indicate a positive relationship. For adult mortality records, low mortality may have higher life expectancy as the distribution of color goes darker from right to left. FUrthermore, developed country tend to have higher life expectancy. There were no too much clear relationship in other variables.
 
-### Data Wranggling
+### Data Wrangling
 
 ```{r echo=FALSE, warning=FALSE}
 for(i in 1:ncol(data)) {
