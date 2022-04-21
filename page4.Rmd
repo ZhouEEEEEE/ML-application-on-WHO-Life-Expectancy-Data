@@ -51,8 +51,10 @@ rf_mse <- 3.420492
 boost_mse <- 6.890100
 xgb_mse <- 3.557269
 ```
-
 <br>
+<br>
+
+# Conclusion and Summary
 
 <br>
 
@@ -159,7 +161,7 @@ According to the MSE table, we can see that Extreme Gradient Boosting model has 
 <br>
 
 <br>
-
+<br>
 <br>
 
 # Conclusion and Summary
