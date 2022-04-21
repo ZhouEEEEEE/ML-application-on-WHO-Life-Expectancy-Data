@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r include=FALSE}
-data <- read.csv('Life Expectancy Data.csv', check.names = F)
+data <- read.csv('./data/Life Expectancy Data.csv', check.names = F)
 ```
 
 

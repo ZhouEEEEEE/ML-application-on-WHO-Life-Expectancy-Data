@@ -12,11 +12,13 @@ output:
 
 # JSC370-Final project Introduction
 
-How humans can live longer is one of the most debated topics in human history. In an era of rapid advances in medicine, education, and technology, human health has improved significantly but will humans necessarily live longer? The differences between countries are not only due to race and region but the imbalance on health care and medical technologies across countries is everywhere. However, in many cases, it is difficult to spread or teach advanced medical treatments to other countries. Does the absence of advanced medical treatments determines lower average life expectancy? Obviously, the answer is no. Medical treatment is not the only factor that determines the life expectancy of human beings but also the climate and environment, social factors, etc.
+How humans can live longer is one of the most debated topics in human history. In an era of rapid advances in medicine, education, and technology, human health has improved significantly but will humans necessarily live longer? The differences between countries are not only due to race and region but the imbalance on health care and medical technologies across countries. However, in many cases, it is difficult to spread or teach advanced medical treatments to other countries. Does the absence of them determines lower average life expectancy? Obviously not, medical treatment is not the only factor that determines the life expectancy of human beings but also the climate and environment, social factors, etc.
 
-In fact, most of the influencing factors come from the government and the social organizations involved. We have a certain measure of whether the government is making a difference in humanistic care, which is the Human Development Index (HDI). The HDI is defined as a summary measure of average achievement in key dimensions of human development, like health. Also, social care as well as health care development cannot be achieved without the government expenditure. That is, at the theoretical level, both the HDI and government expenditure on health care may have an impact on the health of people, leading to an increase in their average life expectancy. However, governments' decisions heavily depends on the level of development of the country, i.e., whether a country is a developed country or not also affects the health policy and the standard of living of the population. These thoughts have led me to wonder whether life expectancy has a stronger relationship between human development index or government health care spending. Additionally, whether these relationships will be altered by the degree of development.
+In fact, most of the influencing factors come from the government and social organizations. We have a certain measure of whether the government is making a difference in humanistic care, which is the Human Development Index (HDI). The HDI is defined as a summary measure of average achievement in key dimensions of human development, like health. Also, social care as well as health care development cannot be achieved without the government expenditure. That is, at the theoretical level, both the HDI and government expenditure on health care may have an impact on the health of people, leading to an increase in their average life expectancy. However, governments' decisions heavily depends on the level of development of the country, i.e., whether a country is a developed country or not also affects the health policy and the standard of living of the population. These thoughts have led me to wonder whether life expectancy has a stronger relationship between human development index or government health care spending. Additionally, whether these relationships will be altered by the degree of development.
 
-Github Repository(For midterm project): https://github.com/ZhouEEEEEE/JSC370-Midterm.git
+However, HDI, health expenditure, and developing status may be not enough to predict life expectancy. There are other social factors that may have a big influence on local life expectancy, like adult mortality. Base on recorded social factors observations, we can add them into more complex models and see how life expectancy would be in the future. By having that high-dimensional model, we would help to increase life expectancy. The whole society will be benefited as more and more related social organizations can get involved and be improved. Hence, we could generalize our new question: how to accurately predict life expectancy?
+
+Git-hub repo: https://github.com/ZhouEEEEEE/JSC370-Final-Project
 
 <br>
 
@@ -29,12 +31,31 @@ Github Repository(For midterm project): https://github.com/ZhouEEEEEE/JSC370-Mid
 -   3\. What are the important features that could help to predict life expectancy?
 
 <br>
+<br>
 
+## Download Full PDF of My Final Project
+
+Click the button to download!
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+library(downloadthis)
+## Link in Github repo
+download_link(
+  link = "https://raw.githubusercontent.com/aescocasti/Charta-Teitok/main/2021-10-07_cosuiza_header_comentado.xml",
+  button_label = "Download Full Project PDF",
+  button_type = "success",
+  has_icon = TRUE,
+  icon = "fa-file-pdf-o",
+  self_contained = FALSE
+)
+```
 <br>
 
 <br>
 
-# Visualizations
+<br>
+
+# Interactive Visualizations
 
 <br>
 I will showcase a few interactive visuals in this page
@@ -64,7 +85,8 @@ library(xgboost)
 library(caret)
 library(wesanderson)
 
-data <- read.csv('Life Expectancy Data.csv', check.names = F)
+data <- read.csv('./data/Life Expectancy Data.csv', check.names = F)
+
 for(i in 1:ncol(data)) {
   data[ , i][is.na(data[ , i])] <- mean(data[ , i], na.rm = TRUE)
 }
@@ -95,19 +117,16 @@ dt1 <- dta[, hdi_level := case_when(dta[, `Income composition of resources`] < 0
 dt1$expenditure_level <- factor(dt1$expenditure_level, levels = c("low", "medium", "high", "very high"))
 dt1$hdi_level <- factor(dt1$hdi_level, levels = c("low", "medium", "high", "very high"))
 
-sexp <- dt1 %>% group_by(expenditure_level) %>%
-  summarise(
-    min_exp = min(`Total expenditure`, na.rm = TRUE),
-    max_exp = max(`Total expenditure`, na.rm = TRUE),
-    count = n()
-  ) %>% arrange(expenditure_level)
+Sys.setenv(LANGUAGE = "en")
+continent <- read.csv("./data/continents2.csv")
+continent <- continent %>%
+  rename(Country = 1)
+# 
+# dt1 <- dt1 %>%
+#   rename(Country = 1)
 
-shdi <- dt1 %>% group_by(hdi_level) %>%
-  summarise(
-    min_exp = min(`Income composition of resources`, na.rm = TRUE),
-    max_exp = max(`Income composition of resources`, na.rm = TRUE),
-    count = n()
-  ) %>% arrange(hdi_level)
+dt1full <- merge(dt1, continent, by = "Country")
+
 ```
 
 ```{css, echo = FALSE}
@@ -122,16 +141,15 @@ dt1$`Total expenditure`
 ```
 <br>
 
-# Interactive Visualization
-
-
 ```{r include=FALSE, warning=FALSE}
 p1_plot <- ggplot(dt1, aes(x = `HIV/AIDS`, y = `Life expectancy`, color = hdi_level)) +
   geom_point(size = 0.5) +
   geom_smooth(data = dt1, formula = y ~ s(x, bs="cr",k=5), method = "gam", col=2) +
   theme_light() +
-  labs(title = "Life expectancy vs HIV/AIDS", x = "Deaths per 1 000 live births HIV/AIDS", y = "Life expectancy") + theme(legend.position = c(0.8, 0.2))
-p1_plot <- ggplotly(p1_plot)
+  labs(title = "Life expectancy vs HIV/AIDS", x = "Deaths per 1000 live births HIV/AIDS", y = "Life expectancy") + theme(legend.position = c(0.8, 0.2))
+
+p1_plot <- ggplotly(p1_plot) %>%
+  layout(legend=list(title=list(text='<b> HDI Level </b>')))
 
 # max_year <- max(data$Year)
 new_data_2013 <- data.frame(dt1 %>% filter(Year==2013))
@@ -156,35 +174,51 @@ p2_plot <- new_data_2013 %>%
 
 # Straight lines are 'Haiti', 'United Kingdom of Great Britain and Northern Ireland', 'United Republic of Tanzania', 'Cote d'Ivoire', and 'Republic of Korea'(Later Modification).
 
-line_data <- as.tibble(dt1)
+line_data <- as.tibble(dt1full)
 
 line_data <- line_data %>%
   filter(Country!="Haiti") %>%
   filter(Country!="United Kingdom of Great Britain and Northern Ireland") %>%
   filter(Country!='United Republic of Tanzania') %>%
   filter(Country!="Cote d'Ivoire") %>%
-  filter(Country!='Republic of Korea')
+  filter(Country!='Republic of Korea') %>%
+  filter(sub.region != "Northern Afrca")
 
 p3_plot <- line_data %>%
-  plot_ly(x = ~`Income composition of resources`, y = ~`Life expectancy`, color = ~Country, type = "scatter", mode = "lines") %>%
+  plot_ly(x = ~`Income composition of resources`, y = ~`Life expectancy`, color = ~sub.region, type = "scatter", mode = "lines",
+          hover_info = "text",
+          text = ~paste(paste0("Country:", Country, "<br>"),
+                        paste0("Life Expectancy:", `Life expectancy`),
+                        paste0("Sub-Region:", sub.region),
+                        paste0("HDI:", `Income composition of resources`),
+                        sep = "<br>")) %>%
   layout(title = "Life Expectancy-ICR",
          yaxis = list(title = "Life expectancy"),
          xaxis = list(title = "Income Composition of Resources"),
-         hovermode = "compare")
+         hovermode = "compare", 
+         legend=list(title=list(text='<b> Sub-region of the country </b>')))
 
-p4_plot <- dt1 %>%
-  plot_ly(x = ~`Total expenditure`, y = ~`Life expectancy`, color = ~Country, type = "scatter", mode = "lines") %>%
-  layout(title = "Life Expectancy-Total Expenditure",
+p4_plot <- dt1full %>%
+  plot_ly(x = ~`Total expenditure`, y = ~`Life expectancy`, color = ~sub.region, type = "scatter", mode = "lines",
+          hover_info = "text",
+          text = ~paste(paste0("Country:", Country, "<br>"),
+                        paste0("Life Expectancy:", `Life expectancy`),
+                        paste0("Sub-Region:", sub.region),
+                        paste0("Total Health Exp:", `Total expenditure`),
+                        sep = "<br>")) %>%
+  layout(title = "Life Expectancy-Total Health Expenditure",
          yaxis = list(title = "Life expectancy"),
-         xaxis = list(title = "Total Expenditure"),
-         hovermode = "compare")
+         xaxis = list(title = "Total Health Expenditure"),
+         hovermode = "compare", 
+         legend=list(title=list(text='<b> Sub-region of the country </b>')))
 
 
 hst <- ggplot(data = data_eda) + 
  geom_histogram(mapping = aes(x = Schooling, fill = life_expectancy_level), bins = 30) +
  scale_fill_manual(values=wes_palette(n=4, name="GrandBudapest2")) +
- labs(x = "Schooling", title = "Histogram of schooling by life expectancy level")
-hst <- ggplotly(hst)
+ labs(x = "Schooling", title = "Stacked Histogram of schooling by life expectancy level")
+hst <- ggplotly(hst)  %>%
+  layout(legend=list(title=list(text='<b> Life Expectancy Level </b>')))
 
 ```
 
@@ -198,6 +232,9 @@ hst <- ggplotly(hst)
 p1_plot
 ```
 HIV/AIDS: Deaths per 1000 live births HIV/AIDS (0-4 years)
+HDI level: Levels of income composition of resources of countries('low' income composition < 0.55; 'medium' income composition 0.55-0.7 'high' income composition 0.7-0.8; 'very high' income composition > 0.8).
+
+According to our scatter plot for life expectancy versus HIV/AIDS deaths, we can see a inverse relationship that is quite poisson distributed. As the deaths goes higher, the life expectancy decreases and becomes flat when the HIV/AIDS is above 15. We did have several outliers that in the bottom of the plot that shows low HIV/AIDS but low life expectancy, which means there may be other influential factors in that observation lead to low ages. We also included HID-levels in the plot to group our observations. It shown that high HID level countries having high life expectancy and low HIV/AIDS deaths as the blue dots and purple dots concentrated on the left. Indicating a inverse relationship between HIV/AIDS and HDI and a positive relationship between Life expectancy and HDI exist.
 
 
 ## Plot 2
@@ -210,29 +247,46 @@ p2_plot
 
 Adult Mortality: Adult Mortality Rates of both sexes (probability of dying between 15 and 60 years per 1000 population)
 
-According to the plot we have for Life Expectancy vs Adult-Mortality. We able to examine their relationship, which is a inverse linear relationship. Higher adult Mortality may result in low life expectancy. I also control the size of the dot by each county's total health expenditure. We can see that countries with relatively low adult mortality and high life expectancy tend to have higher health expenditure. However, we also have a country 'Lesotho' that spend a lot on health expenditure but failed to reduce adult mortality and increase life expectancy.
+According to the plot we have for Life Expectancy vs Adult-Mortality in 2013. We able to get insight in their relationship, which is a inverse linear relationship. Higher adult Mortality may result in low life expectancy. I grouped each dot(country) by their HDI level in 2013 and controlled the size of the dot by each county's total health expenditure in 2013. We can see that countries with relatively low adult mortality and high life expectancy tend to have higher health expenditure. Similar to previous scatter-plot result, high HDI countries have lower adult mortality rate. Additionally, according to dots' size. Countries with higher health expenditure tend to have lower adult mortality rate and high life expectancy. However, We also had country 'Lesotho' that spend a lot on health expenditure but failed to reduce adult mortality and increase life expectancy. We may use its lower HDI level to explain the situation.
 
-## Plot 3
+## Plot 3 A & B
 
-### Line Graph of Life Expectancy vs Income Composition of Resources
+<br>
 
-```{r warning=FALSE, echo=FALSE}
+### A: Line Graph of Life Expectancy vs Income Composition of Resources for each Sub-region Group of Country
+
+```{r warning=FALSE, echo=FALSE, fig.width=7, fig.height=5}
 p3_plot
 ```
 
-In this line graph, we have a line for life expectancy vs income composition of resources for a country. We can investigate that, generally, higher income composition of resources result in higher life expectancy in most of the countries. Hence, we could conclude that there is a positive relationship between life expectancy and income composition of resources, which is Human Development Index, from this graph. We removed countries 'Haiti', 'United Kingdom of Great Britain and Northern Ireland', 'United Republic of Tanzania', 'Cote d'Ivoire', and 'Republic of Korea' since their ICR values are imputed as they were missing in data collection.
+In this line graph, we have a line for life expectancy vs income composition of resources for a country. To make the graph clearer, I grouped countries into different sub-region of their continents. We can investigate that, generally, higher income composition of resources result in higher life expectancy in most of the countries. Hence, we might conclude that there is a positive relationship between life expectancy and income composition of resources, which is Human Development Index by this graph. Furthermore, we could also see that region sub-Saharan Africa had low HDI and low life expectancy, which may due to their poverty issues. Regions in Europe and 'Australia and New Zealand' had pretty high HDI and high life expectancy. We removed countries 'Haiti', 'United Kingdom of Great Britain and Northern Ireland', 'United Republic of Tanzania', 'Cote d'Ivoire', and 'Republic of Korea' since their ICR values are imputed as they were missing in data collection.
 
-Straight lines are 'Haiti', 'United Kingdom of Great Britain and Northern Ireland', 'United Republic of Tanzania', 'Cote d'Ivoire', and 'Republic of Korea'(Later Modification).
+<br>
 
-```{r warning=FALSE, echo=FALSE}
+<br>
+
+### B: Line Graph of Life Expectancy vs Total Expenditure for each Sub-region Group of Country
+
+```{r warning=FALSE, echo=FALSE, fig.width=8, fig.height=5}
 p4_plot
 ```
 
+To compare with the line graph we have for HDI, a line graph of total health expenditure versus life expectancy was also made. We cannot see any clear relationship between those two variables, which means health expenditure might be a less effective factor than HDI. Most of the regions having countries that across each level of expenditure. However, countries in sub-Saharan African also had lower life expectancy values.
+
+
+<br>
+
 ## Plot 4
+
+### Stacked Histogram of Schooling by Life Expectancy Levels
 
 ```{r warning=FALSE, echo=FALSE}
 hst
 ```
+Schooling: Number of years of Schooling(years)
+
+The stacked histogram of variable 'Schooling' was made. We differed each bar by life expectancy level. According to the plot, countries with high schooling had higher life expectancy level as the color goes darker from left to right. Most of the countries achieve high level of life expectancy when they had more than 10 years of schooling. There is no really big difference between the schooling of the counties with 'low' and 'medium' life expectancy level. Hence, we may have a weak positive relationship between schooling and life expectancy.
+
 
 <br>
 

@@ -422,6 +422,18 @@ M12: Income composition of resources as smooth terms adjusted by status: gam(lif
 <div id="machine-learning-models-predict-on-life-expectancy" class="section level2">
 <h2>Machine Learning Models Predict on Life Expectancy</h2>
 <p><br></p>
+<div id="discussed-variable-meaning" class="section level3">
+<h3>Discussed Variable meaning:</h3>
+<ul>
+<li>income_com: Income composition of resources, which is HDI in our research.</li>
+<li>Adult Mortality: Adult Mortality Rates of both sexes (probability of dying between 15 and 60 years per 1000 population)</li>
+<li>HIV/AIDS: Deaths per 1 000 live births HIV/AIDS (0-4 years)</li>
+<li>Schooling: Number of years of Schooling(years)</li>
+<li>BMI: Average Body Mass Index of entire population</li>
+</ul>
+<p><br></p>
+<p><br></p>
+</div>
 <div id="regression-tree" class="section level3">
 <h3>Regression Tree</h3>
 <p>In this section, we will perform basic machine learning techniques on our life expectancy data. We will fit regression tree, bagging, random forest, gradient boosting, and extreme gradient boosting models to predict life expectancy based on the social factors in the data. Our aim is finding a most predictive model from them by comparing their MSE.</p>
@@ -434,7 +446,7 @@ M12: Income composition of resources as smooth terms adjusted by status: gam(lif
 <p>Fitting random forest and bagging models help us to find the most important features to predict life expectancy.</p>
 <p><img src="bag.png" width="100%" /></p>
 <p><img src="rf.png" width="100%" /></p>
-<p>According to the variable importance plots we have for bagging and random forest. Variable ‘income_com’ is the most important features in both models.</p>
+<p>According to the variable importance plots we have for bagging and random forest. Variable ‘income_com’ is the most important features in both models. Adult mortality, HIV/AIDS deaths, and BMI are also quite significant in both models.</p>
 <p><br></p>
 <p><br></p>
 </div>
@@ -538,8 +550,7 @@ M12: Income composition of resources as smooth terms adjusted by status: gam(lif
 </tr>
 </tbody>
 </table>
-<p>According to the variable importance plot we have, there is a clear difference in relative influence between variables. There are three most important variables that dominate our boosting model, which means simpler model may have similar performance. By the table for each variable and their corresponding relative influence in Gradient Boosting Model. The variable that is the most influential is ‘income_com’, indicating HDI, with relative influence 55.4197399. Variable ‘total_exp’, indicating health expenditure, has relative influence 1.5076932.</p>
-<p><br></p>
+<p>According to the variable importance plot we have, there is a clear difference in relative influence between variables. There are three most important variables: HDI(income_com), ‘HIV/AIDS death’, and adult mortality, that dominate our boosting model, which means simpler model may have similar performance. By the table for each variable and their corresponding relative influence in Gradient Boosting Model. The variable that is the most influential is ‘income_com’, indicating HDI, with relative influence 55.4197399. Variable ‘total_exp’, indicating health expenditure, has relative influence 1.5076932. <br></p>
 <p><br></p>
 </div>
 </div>
@@ -547,7 +558,7 @@ M12: Income composition of resources as smooth terms adjusted by status: gam(lif
 <h3>Perform Extreme Gradient Boosting</h3>
 <p>Based on the wrangled data, we perform extreme gradient boosting model to predict life expectancy. We set up a tuning grid that can help us to perform grid search on eta, max_depth, and nrounds. Based on our data, and ‘xgbTree’ method, we train our xgb model on the tune grid. After training, we have our variable importance plot.</p>
 <p><img src="xgbvar.png" width="100%" /></p>
-<p>According to the plot, we can see that the difference of importance between variables are pretty clear. Variable ‘income_com’ is also the most important feature in extreme gradient boosting model. Total expenditure is the 11th important variable.</p>
+<p>According to the plot, we can see that the difference of importance between variables are pretty clear. Variable ‘income_com’ is also the most important feature in extreme gradient boosting model. Total expenditure is the 11th important variable. We also find HIV/AIDS deaths and adult mortality, and schooling played an significant role in predicting life expectancy.</p>
 <p><br></p>
 <p><br></p>
 </div>

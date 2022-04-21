@@ -53,6 +53,18 @@ To compare whether HDI or health expenditure have stronger relationship with lif
 
 <br>
 
+### Discussed Variable meaning:
+
+- income_com: Income composition of resources, which is HDI in our research.
+- Adult Mortality: Adult Mortality Rates of both sexes (probability of dying between 15 and 60 years per 1000 population)
+- HIV/AIDS: Deaths per 1 000 live births HIV/AIDS (0-4 years)
+- Schooling: Number of years of Schooling(years)
+- BMI: Average Body Mass Index of entire population
+
+<br>
+
+<br>
+
 ### Regression Tree  
 In this section, we will perform basic machine learning techniques on our life expectancy data. We will fit regression tree, bagging, random forest, gradient boosting, and extreme gradient boosting models to predict life expectancy based on the social factors in the data. Our aim is finding a most predictive model from them by comparing their MSE.
 
@@ -75,7 +87,7 @@ knitr::include_graphics("bag.png")
 knitr::include_graphics("rf.png")
 ```
 
-According to the variable importance plots we have for bagging and random forest. Variable 'income_com' is the most important features in both models.
+According to the variable importance plots we have for bagging and random forest. Variable 'income_com' is the most important features in both models. Adult mortality, HIV/AIDS deaths, and BMI are also quite significant in both models.
 
 <br>
 
@@ -110,12 +122,11 @@ According to the plot we have, the deviation between validation error and train 
 
 ```{r echo=FALSE, out.width = '90%'}
 knitr::include_graphics("boostvarimp.png")
-bv <- read.csv("boost_varimp.csv")
+bv <- read.csv("./data/boost_varimp.csv")
 knitr::kable(bv, caption = "Reletive influence for each variable in Gradient Boosting Model")
 ```
 
-According to the variable importance plot we have, there is a clear difference in relative influence between variables. There are three most important variables that dominate our boosting model, which means simpler model may have similar performance. By the table for each variable and their corresponding relative influence in Gradient Boosting Model. The variable that is the most influential is 'income_com', indicating HDI, with relative influence 55.4197399. Variable 'total_exp', indicating health expenditure, has relative influence 1.5076932.
-
+According to the variable importance plot we have, there is a clear difference in relative influence between variables. There are three most important variables: HDI(income_com), 'HIV/AIDS death', and adult mortality, that dominate our boosting model, which means simpler model may have similar performance. By the table for each variable and their corresponding relative influence in Gradient Boosting Model. The variable that is the most influential is 'income_com', indicating HDI, with relative influence 55.4197399. Variable 'total_exp', indicating health expenditure, has relative influence 1.5076932.
 <br>
 
 <br>
@@ -129,7 +140,7 @@ After training, we have our variable importance plot.
 knitr::include_graphics("xgbvar.png")
 ```
 
-According to the plot, we can see that the difference of importance between variables are pretty clear. Variable 'income_com' is also the most important feature in extreme gradient boosting model. Total expenditure is the 11th important variable.
+According to the plot, we can see that the difference of importance between variables are pretty clear. Variable 'income_com' is also the most important feature in extreme gradient boosting model. Total expenditure is the 11th important variable. We also find HIV/AIDS deaths and adult mortality, and schooling played an significant role in predicting life expectancy.
 
 <br>
 

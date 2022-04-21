@@ -604,11 +604,11 @@ Checking Assumptions
 </div>
 <div id="discussion-and-limitation" class="section level2">
 <h2>Discussion and limitation</h2>
-<p>According to the result we have, if the governments aim to increase life expectancy of the population, they should focus on factors that will increase the HDI. Not just spending too much money health development. In may cases, better health treatment and medical technologies does not benefit everyone. For most of the population, even poorer people, their health conditions need much longer time to respond to larger health expenditure than richer people. Additionally, people who would like to search for some counties to stay and try to live longer could choose countries with high HDI, rather than high health expenditure.</p>
-<p>Limitations:<br />
-1. Since we impute NAs by mean value, we may result in biased standard error, variance, and sample mean. Our estimate may be pulled by other observations.</p>
-<ol start="2" style="list-style-type: decimal">
-<li><p>Since we have 16 years of observations per country and we investigate the dataset as a whole, our observations are not totally independent. Also, we ignored the structural difference between countries, like race and climate.</p></li>
+<p>According to the result we have, if the governments aim to increase life expectancy of the population, they should focus on factors that will increase the HDI. Not just spending too much money health development. In may cases, better health treatment and medical technologies does not benefit everyone. For most of the population, even poorer people, their health conditions need much longer time to respond to larger health expenditure than richer people. Additionally, people who would like to search for some counties to stay and try to live longer could choose countries with high HDI, rather than high health expenditure. For government or social organizations that would like to predict local life expectancy, they need to focus on HIV infection records, local HDI, adult mortality, and number of years of schooling. Their values are statistically significant on predicting life expectancy. Fitting a extreme gradient boosting model would yield more accurate values a based on our research result.</p>
+<p>Limitations:</p>
+<ol style="list-style-type: decimal">
+<li><p>Since we impute NAs by mean value, we may result in biased standard error, variance, and sample mean. Our estimate may be pulled by other observations.</p></li>
+<li><p>Since we have 16 years of observations per country and we investigate the data-set as a whole, our observations are not totally independent. Also, we ignored the structural difference between countries, like race and climate.</p></li>
 <li><p>Though in model comparison, some spline models have better performance than the linear model, picking a spline model also increase our risk on over-fitting.</p></li>
 <li><p>We only fitted spline models with 3 knots. We should also vary it to compare spline models with different knot numbers.</p></li>
 <li><p>In many of our machine learning models, we can see there are only a few variables that dominate our model, which means, in further study, we could reduce the model complexity but also have similar performance.</p></li>

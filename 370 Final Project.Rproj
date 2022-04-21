@@ -13,3 +13,4 @@ RnwWeave: Sweave
 LaTeX: pdfLaTeX
 
 BuildType: Website
+WebsitePath: C:/Users/ZhouEE/JSC370/JSC370/jsc370-2022/JSC370-final project/370 Final Project

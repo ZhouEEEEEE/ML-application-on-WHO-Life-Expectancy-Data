@@ -1,0 +1,920 @@
+---
+title: "JSC370 Final Project"
+author: "Shiyuan Zhou"
+date: "2022/4/12"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+How humans can live longer is one of the most debated topics in human history. In an era of rapid advances in medicine, education, and technology, human health has improved significantly but will humans necessarily live longer? The differences between countries are not only due to race and region but the imbalance on health care and medical technologies across countries. However, in many cases, it is difficult to spread or teach advanced medical treatments to other countries. Does the absence of them determines lower average life expectancy? Obviously not, medical treatment is not the only factor that determines the life expectancy of human beings but also the climate and environment, social factors, etc.
+
+In fact, most of the influencing factors come from the government and social organizations. We have a certain measure of whether the government is making a difference in humanistic care, which is the Human Development Index (HDI). The HDI is defined as a summary measure of average achievement in key dimensions of human development, like health. Also, social care as well as health care development cannot be achieved without the government expenditure. That is, at the theoretical level, both the HDI and government expenditure on health care may have an impact on the health of people, leading to an increase in their average life expectancy. However, governments' decisions heavily depends on the level of development of the country, i.e., whether a country is a developed country or not also affects the health policy and the standard of living of the population. These thoughts have led me to wonder whether life expectancy has a stronger relationship between human development index or government health care spending. Additionally, whether these relationships will be altered by the degree of development.
+
+However, HDI, health expenditure, and developing status may be not enough to predict life expectancy. There are other social factors that may have a big influence on local life expectancy, like adult mortality. Base on recorded social factors observations, we can add them into more complex models and see how life expectancy would be in the future. By having that high-dimensional model, we would help to increase life expectancy. The whole society will be benefited as more and more related social organizations can get involved and be improved. Hence, we could generalize our new question: how to accurately predict life expectancy?
+
+Git-hub repo: https://github.com/ZhouEEEEEE/JSC370-Final-Project
+
+## Research Question
+
+The aim for this whole project is to increase life expectancy. As our interest in HDI and health expenditure, we have our first two research questions to see possible positive relationship. Additionally, we could use our built model in the third question to give better prediction on life expectancy.
+
+1. Is government health expenditure have greater impact on life expectancy than Human Development Index?
+2. Does life expectancy also depends on the development status of the country?
+3. How to accurately predict life expectancy by social factors?
+
+\newpage
+
+# Methods
+
+## Used R packages
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+Sys.setenv(LANGUAGE = "en")
+library(data.table)
+library(dtplyr)
+library(dplyr)
+library(ggplot2)
+library(mgcv)
+library(zoo)
+library(leaflet)
+library(ggpubr)
+library(lme4)
+library(lmtest)
+library(tidyverse)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+library(gbm)
+library(xgboost)
+library(caret)
+```
+Here are the following R packages that I used for this portfolio.:
+data.table;
+dtplyr;
+dplyr;
+ggplot2;
+mgcv;
+zoo;
+leaflet;
+ggpubr;
+lme4;
+lmtest;
+tidyverse;
+rpart;
+rpart.plot;
+randomForest;
+gbm;
+xgboost;
+caret
+
+## Data Source
+
+The Data that I used to answer my research question is based on the WHO data and published on Kaggle by Kumar Rajarshi. This dataset includes values social factors of 193 countries from 2000 to 2015 and the life expectancy in age. In our research question, we are aim to compare the impact of government health expenditure and Human Development Index on life expectancy. These two predictors are represent by 'Total expenditure' and 'Income composition of resources' in our data-set. For our third research question, the target is life expectancy. Since we also stated that social factors may have a big difference between developed and developing countries. We sill also include the binary variable 'Status' that indicate the development status of a country. All of these variables will change across years.
+
+Link of data: https://www.kaggle.com/kumarajarshi/life-expectancy-who
+
+We also used a data-set that help us in visualizations from: https://www.kaggle.com/datasets/andradaolteanu/country-mapping-iso-continent-region?resource=download.
+This is not our main data and all the data exploration part is focusing on our previous main data.
+
+
+```{r include=FALSE}
+data <- read.csv('Life Expectancy Data.csv', check.names = F)
+```
+
+## Exploratory Data Analysis
+
+Before answering our research question, we need to do Exploratory Data Analysis first to find issues in our data, clean our data, and make summary statistics, plots, and graphs for our key variables.
+
+### Data Checking
+
+```{r echo=FALSE}
+num_na <-sapply(data, function(x) sum(length(which(is.na(x)))))
+knitr::kable(data.frame(num_na), caption = "Number of missing values for each variable")
+```
+
+We have 2937 number of observations and 22 number of variables in our dataset. There are 14 columns contain NAs. There are 167 missing values in Income composition of resources and 225 NAs in total expenditure. The variable with highest amount of NAs is 'Hepatitis B'. We will do the missing value imputation in the next section.
+
+#### Check dimensions of our data
+
+```{r echo=FALSE}
+s1 <- data %>%
+  summarise(
+    axis = c("num_observations", "num_variables"),
+    value = c(nrow(data), ncol(data))
+  )
+
+knitr::kable(s1, caption = "Summery table of the dimensions of our data")
+
+```
+We have 2937 number of observations and 22 number of variables in our dataset.
+
+
+#### Check the summary statistics of required numeric variables
+
+```{r echo=FALSE}
+s2 <- data[, c(4, 5, 14, 16, 21)] %>%
+  summary()
+
+knitr::kable(as.array(s2), caption = "Summary statistics of required variables")
+
+```
+Since our data-set contains multiple variables, presenting summary statistics for all the variables is not optimal. Here are the summary statistics of several key variables help us to find the issues and reliability of our data. According to the summary table we get, variable 'Life expectancy' and 'Total expenditure' do not have big issues and in our estimated bound(life expectancy should be greater than 0 and less than 100, total expenditure should be greater than 0 and less than 100 since it represents proportion). However, the variable 'income composition of resources' has minimum values equals to 0. Since this variable indicate human development index, its impossible to have 0 values, which means we need to remove those observations. According to the worldpopulationreview.com, the country with lowest HDI in 2019 is Niger with 0.394. Hence, 0 income composition should be removed from the data set in order to prevent wrong model fitting. Other variables' reliability were also checked.
+
+```{r echo=FALSE}
+data <- data[ which(data$ `Income composition of resources` > 0.0), ]
+
+dt <- data.table(data)
+
+data_eda <- dt[, life_expectancy_level := case_when(dt[, `Life expectancy`] < 50 ~ "low", 
+                               dt[, `Life expectancy`] <= 65 ~ "medium",
+                               dt[, `Life expectancy`] <= 80 ~ "high",
+                               dt[, `Life expectancy`] > 80 ~ "very high")
+      ]
+data_eda <- data.frame(data_eda)
+data_eda$life_expectancy_level <- factor(data_eda$life_expectancy_level, levels = c("low", "medium", "high", "very high"))
+
+```
+
+
+#### Check Distribution of required variables
+  
+The distribution of several main variables are checked base on their plotted histograms.
+
+```{r warning=FALSE, echo=FALSE, caption = "Check Distribution of required variables", fig.width=10.5, fig.height=4.5, fig.pos = "H"}
+le <- ggplot(data = data_eda) +
+ geom_histogram(mapping = aes(x = Life.expectancy), bins = 40, fill = "#826bc6")  +
+ labs(x = "life expectancy in age", title = "Histogram of life expectancy")
+# 
+# hs1 <- ggplot(data = data_eda) + 
+#  geom_histogram(mapping = aes(x = data_eda$`Total expenditure`), bins = 40, fill = factor(data_eda$life_expectancy_level))  +
+#  labs(x = "total expenditure", title = "Histogram of total health expenditure")
+# 
+# hs2 <- ggplot(data = data_eda) + 
+#  geom_histogram(mapping = aes(x = `Income composition of resources`), bins = 40, fill = factor(data_eda$life_expectancy_level))  +
+#  labs(x = "Income composition of resources(ICR)", title = "Histogram of ICR")
+
+
+hdi <- ggplot(data = data_eda, aes(x=Income.composition.of.resources, fill = life_expectancy_level)) + 
+ geom_histogram(bins = 60)  +
+ labs(x = "total expenditure", title = "Histogram of HDI") + 
+  scale_fill_manual(values = c("low" = "#c3cfce",
+                               "medium" = "#9c93c9",
+                               "high" = "#7557c4",
+                               "very high" = "#4107bd"))+
+  theme(legend.position="none")
+
+am <- ggplot(data = data_eda, aes(x=Adult.Mortality, fill = life_expectancy_level)) + 
+ geom_histogram(bins = 60)  +
+ labs(x = "total expenditure", title = "Histogram of adult mortality") + 
+  scale_fill_manual(values = c("low" = "#c3cfce",
+                               "medium" = "#9c93c9",
+                               "high" = "#7557c4",
+                               "very high" = "#4107bd"))+
+  theme(legend.position="none")
+
+BMI <- ggplot(data = data_eda, aes(x=BMI, fill = life_expectancy_level)) + 
+ geom_histogram(bins = 60)  +
+ labs(x = "total expenditure", title = "Histogram of BMI") + 
+  scale_fill_manual(values = c("low" = "#c3cfce",
+                               "medium" = "#9c93c9",
+                               "high" = "#7557c4",
+                               "very high" = "#4107bd"))+
+  theme(legend.position="none")
+
+# ba <- ggplot(data = data_eda) + 
+#  geom_bar(mapping = aes(x = `Status`), fill = factor(data_eda$life_expectancy_level)) +
+#  labs(title = "Barchart of development status") +
+#   theme_light()
+
+st <- ggplot(data = data_eda, aes(x=Status, fill = life_expectancy_level)) + 
+ geom_bar(bins = 60)  +
+ labs(x = "total expenditure", title = "Bar plot of developing status") + 
+  scale_fill_manual(values = c("low" = "#c3cfce",
+                               "medium" = "#9c93c9",
+                               "high" = "#7557c4",
+                               "very high" = "#4107bd"))+
+  theme(legend.position="none")
+
+te <- ggplot(data = data_eda, aes(x=Total.expenditure, fill = life_expectancy_level)) + 
+ geom_histogram(bins = 60)  +
+ labs(x = "total expenditure", title = "Histogram of total expenditure") + 
+  scale_fill_manual(values = c("low" = "#c3cfce",
+                               "medium" = "#9c93c9",
+                               "high" = "#7557c4",
+                               "very high" = "#4107bd")) +
+  theme(legend.position="bottom")
+
+ggarrange(le, hdi, am, BMI, te, st, ncol = 3, nrow = 2)
+
+
+```
+To have more insights on their relationship with life expectancy, we also made variable 'life_expectancy_level' for different levels of ages only for EDA. The distribution of life expectancy and total expenditure is quite normal but life expectancy is left-skewed. For HDI(Income composition of resources) and BMI, we can see that, higher level of life expectancy concentrated on higher HDI, which may indicate a positive relationship. For adult mortality records, low mortality may have higher life expectancy as the distribution of color goes darker from right to left. FUrthermore, developed country tend to have higher life expectancy. There were no too much clear relationship in other variables.
+
+### Data Wranggling
+
+```{r echo=FALSE, warning=FALSE}
+for(i in 1:ncol(data)) {
+  data[ , i][is.na(data[ , i])] <- mean(data[ , i], na.rm = TRUE)
+}
+```
+
+#### NA Imputation and data joining
+
+We handled the missing values by imputation. We use mean value of current column to impute by for looping each column. In the visualization part, we also used countries' sub region of their continent. Hence, we made a left join on our main data-set with continent data-set by each country's name.
+
+
+#### Create New Variable
+  
+To do further data exploration on different types of plots, we need both numeric and categorical 'Total expenditure' and 'Income composition of resources'. Converting current numeric variables to categorical variables helps us on stacked histograms, statistical summary graph, and etc. In many statistical research on social factors, health expenditure and HDI are always represented by different levels.
+
+Create a new categorical variable named "expenditure_level" using total expenditure on health of a country. (rare total expenditure < 3; low total expenditure 3-5; mild total expenditure 5-9; high total expenditure > 9) and a new categorical variable named "hdi_level" indicating level of income composition of resources of countries(low income composition < 0.55; medium income composition 0.55-0.7; high income composition 0.7-0.8; very high income composition > 0.8). Additionally, we should use factor() function to give our levels an order for future convenience.
+
+Since we also need to perform gradient boosting and extreme gradient boosting to predict life expectancy based on our dataset. Hence, we need to make character variables into numeric variables since boosting model cannot apply to categorical variables. By looking at the dataset, we found that variable 'Status' and 'Country' are categorical. We do not need variable 'Country' in machine learning model fitting as we investigate the dataset as a whole: each country's value in each year is a single observation. Variable 'Status' is binary. Hence, we only need to convert it into 1 and 0 and create new variables 'status_num'.
+
+We also found the range of variable 'GDP', 'Percentage Expenditure' and 'Population' are much larger than other variables, which means we need to scale them. If there is a big difference in the range of variables, higher ranging numbers may have superiority in model fitting.
+
+
+```{r echo=FALSE}
+dt <- data.table(data)
+
+dta <- dt[, expenditure_level := case_when(dt[, `Total expenditure`] < 3 ~ "low", 
+                               dt[, `Total expenditure`] <= 5 ~ "medium",
+                               dt[, `Total expenditure`] <= 9 ~ "high",
+                               dt[, `Total expenditure`] > 9 ~ "very high")
+      ]
+
+dt1 <- dta[, hdi_level := case_when(dta[, `Income composition of resources`] < 0.55 ~ "low", 
+                               dta[, `Income composition of resources`] <= 0.7 ~ "medium",
+                               dta[, `Income composition of resources`] <= 0.8 ~ "high",
+                               dta[, `Income composition of resources`] > 0.8 ~ "very high")]
+
+dt1$expenditure_level <- factor(dt1$expenditure_level, levels = c("low", "medium", "high", "very high"))
+dt1$hdi_level <- factor(dt1$hdi_level, levels = c("low", "medium", "high", "very high"))
+dt1$status_num <- ifelse(dt1$Status=="Developed",1,0)
+
+dt1$GDP <- scale(dt1$GDP)
+dt1$`percentage expenditure` <- scale(dt1$`percentage expenditure`)
+dt1$Population <- scale(dt1$Population)
+
+# sexp <- dt1 %>% group_by(expenditure_level) %>%
+#   summarise(
+#     min_exp = min(`Total expenditure`, na.rm = TRUE),
+#     max_exp = max(`Total expenditure`, na.rm = TRUE),
+#     count = n()
+#   ) %>% arrange(expenditure_level)
+# knitr::kable(sexp, caption = "Summery table of min total expenditure, max total expenditure, and number of observations for each level of total expenditure")
+# 
+# shdi <- dt1 %>% group_by(hdi_level) %>%
+#   summarise(
+#     min_exp = min(`Income composition of resources`, na.rm = TRUE),
+#     max_exp = max(`Income composition of resources`, na.rm = TRUE),
+#     count = n()
+#   ) %>% arrange(hdi_level)
+# knitr::kable(shdi, caption = "Summery table of min income composition of resources, max income composition of resources, and number of observations for each level of HDI
+# ")
+
+```
+
+
+## Visualizations
+
+The interactive version of histograms, bar charts, and statistical summary graph is presented in the 'Visualization' page on the website of this project: https://zhoueeeeee.github.io/JSC370-Final-Project/.
+
+### Histograms
+
+```{r warning=FALSE, echo=FALSE, caption = "Histograms", fig.width=8, fig.height=6}
+hst1 <- ggplot(data = dt1) + 
+ geom_histogram(mapping = aes(x = `Life expectancy`, fill = expenditure_level), bins = 30) +
+ scale_fill_manual(values = c("pink", "palevioletred1", "violetred3", "brown3")) +
+ labs(x = "Life expectancy(age)", title = "Histogram of life expectancy by expenditure level")
+
+hst2 <- ggplot(data = dt1) + 
+ geom_histogram(mapping = aes(x = `Life expectancy`, fill = hdi_level), bins = 30) +
+ scale_fill_manual(values = c("slategray2", "skyblue3", "slateblue1", "slateblue4")) +
+ labs(x = "Life expectancy(age)", title = "Histogram of life expectancy by HDI level")
+
+ggarrange(hst1, hst2, ncol = 1, nrow = 2)
+```
+
+The first plot we have is the stacked histograms of life expectancy by expenditure level and HDI level. The proportion of each level of expenditure does not make a big difference across different ages. However, in the stacked histogram for HDI level, it is very clear that higher HDI level become more concentrated on the right, which is higher age. For different range of age, there always have a dominated HDI level. For example, for life expectancy less than 60, low HDI level dominates. Hence, according to these histograms, income composition of resources have a stronger relationship with life expectancy.
+
+\newpage
+
+### Bar Chart
+
+```{r warning=FALSE, echo=FALSE, caption = "Barchart", fig.width=8, fig.height=3.5}
+bar1 <- ggplot(data = dt1) + 
+ geom_bar(mapping = aes(x = expenditure_level, fill = `Status`)) +
+  scale_fill_manual(values = c("pink", "darkred")) +
+ labs(title = "Barchart of expenditure level by development status", x = "expenditure level")
+
+bar2 <- ggplot(data = dt1) + 
+ geom_bar(mapping = aes(x = hdi_level, fill = `Status`)) +
+  scale_fill_manual(values = c("pink", "darkred")) +
+ labs(title = "Barchart of HDI level by development status", x = "HDI level")
+
+ggarrange(bar1, bar2, ncol = 2, nrow = 1)
+
+```
+
+According to the barcharts we have for categorical variables expenditure level and HDI level by development status, developed countries tend to have higher expenditure and income composition of resources. However, the trend between HDI level and development status is stronger.
+
+```{r warning=FALSE, echo=FALSE, caption = "Barchart of Expenditure level by HDI level", fig.width=8, fig.height=4.5}
+ggplot(data = dt1) + 
+ geom_bar(mapping = aes(x = expenditure_level, fill = hdi_level)) +
+  scale_fill_manual(values = c("pink", "palevioletred1", "violetred3", "darkred")) +
+ labs(title = "Barchart of Expenditure level by HDI level", x = "Expenditure level")
+```
+
+According to the bar chart we get for expenditure level by HDI level, the proportion of low and high HDI level is the largest in the low expenditure level. The proportion of medium HDI level is the largest in medium expenditure level and also for high and very high level. Hence, we could say counties with high expenditure level have higher probability to have high HDI level. Predictors expenditure and HDI may have a linear relationship.
+
+\newpage
+
+### Statistical summary graph
+
+```{r warning=FALSE, echo=FALSE, caption = "Statistical summary graph of FEV by BMI", fig.width=8, fig.height=4}
+
+a1 <- ggplot(data = dt1) + 
+ stat_summary(mapping = aes(x = expenditure_level, y = `Life expectancy`), fun.min = min,fun.max = max,fun = median, size = 1.5) +
+  labs(y = "life expectancy", x = "expenditure level") + theme_minimal()
+
+b1 <- ggplot(data = dt1) + 
+ stat_summary(mapping = aes(x = expenditure_level, y = `Life expectancy`, color = `Status`), fun.min = min, fun.max = max,fun = mean, size = 1.5) +
+  labs(y = "life expectancy", x = "expenditure level") + theme_minimal()
+
+ggarrange(a1, b1, ncol = 2, nrow = 1)
+```
+
+According to the statistical summary graph for expenditure level, though mean of life expectancy in low level of expenditure level is higher, we may have an increasing trend between expenditure level and life expectancy. However, if we adjusted by development status, we can see that the trend is clear for developing countries but not for developed countries. The higher mean of life expectancy in low level of expenditure was pulled up by the values of developed countries as the orange points shows. Additionally, the range of life expectancy for each expenditure level as the distance from min to max is large, which means our model may not fit tightly.
+
+```{r warning=FALSE, echo=FALSE, caption = "Statistical summary graph of FEV by BMI", fig.width=8, fig.height=4}
+
+a <- ggplot(data = dt1) + 
+ stat_summary(mapping = aes(x = hdi_level, y = `Life expectancy`), fun.min = min,fun.max = max,fun = median, size = 1.5) +
+  labs(y = "life expectancy", x = "HDI level") + theme_minimal()
+
+b <- ggplot(data = dt1) + 
+ stat_summary(mapping = aes(x = hdi_level, y = `Life expectancy`, color = `Status`), fun.min = min,fun.max = max,fun = mean, size = 1.5) +
+  labs(y = "life expectancy", x = "HDI level") + theme_minimal()
+
+ggarrange(a, b, ncol = 2, nrow = 1)
+```
+
+The statistical summary graph we have for HDI level shows a positive relationship between human development index and life expectancy. Adjusting by development status did not make a difference on our relationship. Additionally, the distance between min and max is much shorter than that in expenditure level which indicate a strong relationship and a tighter model fit.
+
+### Scatterplots
+
+The scatter plot of live expectancy vs total health expenditure and income composition of resources clearly present what actual model fitting will be in our dataset. 
+
+```{r warning=FALSE, echo=FALSE, caption = "Life expectancy vs total expenditure", message=FALSE, fig.width=8, fig.height=7, fig.pos = "H"}
+k <- ggplot(data = dt1) + 
+ geom_point(mapping = aes(x = `Total expenditure`, y = `Life expectancy`, color = `Status`), size = 0.5) + 
+ geom_smooth(mapping = aes(x = `Total expenditure`, y = `Life expectancy`), method = 'lm') +
+ labs(title = "Life expectancy vs total expenditure", x = "Total health expenditure", y = "Life expectancy") + theme_light() +
+  theme(legend.position='none')
+
+s <- ggplot(dt1, aes(x = `Total expenditure`, y = `Life expectancy`, color = `Status`)) +
+  geom_point(size = 0.5) +
+  geom_smooth(data = dt1, formula = y ~ s(x, bs="cr",k=5), method = "gam", col=2) +
+  labs(title = "Life expectancy vs total expenditure", x = "Total health expenditure", y = "Life expectancy") + theme_light() +
+  theme(legend.position='none')
+
+v <- ggplot(data = dt1) + 
+ geom_point(mapping = aes(x = `Income composition of resources`, y = `Life expectancy`, color = `Status`), size = 0.5) + 
+ geom_smooth(mapping = aes(x = `Income composition of resources`, y = `Life expectancy`), method = 'lm') +
+ labs(title = "Life expectancy vs ICR", x = "Income composition of resources", y = "Life expectancy") +
+  theme_light() +
+  theme(legend.position='none')
+
+z <- ggplot(dt1, aes(x = `Income composition of resources`, y = `Life expectancy`, color = `Status`)) +
+  geom_point(size = 0.5) +
+  geom_smooth(data = dt1, formula = y ~ s(x, bs="cr",k=5), method = "gam", col=2) +
+  theme_light() +
+  labs(title = "Life expectancy vs ICR", x = "Income composition of resources", y = "Life expectancy") + theme(legend.position = c(0.8, 0.2))
+ggarrange(k, s, v, z, ncol = 2, nrow = 2)
+```
+
+The two plots with two blue straight line on the left is the linear model fitted in each of the relationship. The two plots on the right is the cubic spline model we have, where the red curve is the fitted splines. The middle straight dotted line in expenditure plot is where we impute the NAs in variable total expenditure with mean. According to the plots we have for live expectancy vs total health expenditure, the linear model is not very fitted to our data. Spline model could explain more variation and yields better fit but the decreasing trend when total health expenditure is greater than 12.5 may comes from over-fitting on the right-most points. Comparing to what we have in life expectancy vs income composition of resources, a positive linear trend is pretty clear. However, the fitted spline model does not make a big difference than the linear model. We need to further decide which model is better by adjusted R squared since spline model may have a higher adjusted R squared but the cost is over-fitting.
+
+\newpage
+
+### Scatter plot of life expectancy vs HIV/AIDS
+
+This plot is shown in the 'Plot 1' under the interactive visualization section in page: https://zhoueeeeee.github.io/JSC370-Final-Project/
+
+HIV/AIDS: Deaths per 1000 live births HIV/AIDS (0-4 years)
+HDI level: Levels of income composition of resources of countries('low' income composition < 0.55; 'medium' income composition 0.55-0.7 'high' income composition 0.7-0.8; 'very high' income composition > 0.8).
+
+According to our scatter plot for life expectancy versus HIV/AIDS deaths, we can see a inverse relationship that is quite poisson distributed. As the deaths goes higher, the life expectancy decreases and becomes flat when the HIV/AIDS is above 15. We did have several outliers that in the bottom of the plot that shows low HIV/AIDS but low life expectancy, which means there may be other influential factors in that observation lead to low ages. We also included HID-levels in the plot to group our observations. It shown that high HID level countries having high life expectancy and low HIV/AIDS deaths as the blue dots and purple dots concentrated on the left. Indicating a inverse relationship between HIV/AIDS and HDI and a positive relationship between Life expectancy and HDI exist.
+
+
+### Scatterplot of Life Expectancy vs Adult-Mortality for each level HDI level
+
+This plot is shown in the 'Plot 2' under the interactive visualization section in page: https://zhoueeeeee.github.io/JSC370-Final-Project/
+
+Adult Mortality: Adult Mortality Rates of both sexes (probability of dying between 15 and 60 years per 1000 population)
+
+According to the plot we have for Life Expectancy vs Adult-Mortality in 2013. We able to get insight in their relationship, which is a inverse linear relationship. Higher adult Mortality may result in low life expectancy. I grouped each dot(country) by their HDI level in 2013 and controlled the size of the dot by each county's total health expenditure in 2013. We can see that countries with relatively low adult mortality and high life expectancy tend to have higher health expenditure. Similar to previous scatter-plot result, high HDI countries have lower adult mortality rate. Additionally, according to dots' size. Countries with higher health expenditure tend to have lower adult mortality rate and high life expectancy. However, We also had country 'Lesotho' that spend a lot on health expenditure but failed to reduce adult mortality and increase life expectancy. We may use its lower HDI level to explain the situation.
+
+### Line Graph of Life Expectancy vs Income Composition of Resources for each Sub-region Group of Country
+
+This plot is shown in the 'Plot 3-A' under the interactive visualization section in page: https://zhoueeeeee.github.io/JSC370-Final-Project/
+
+In this line graph, we have a line for life expectancy vs income composition of resources for a country. To make the graph clearer, I grouped countries into different sub-region of their continents. We can investigate that, generally, higher income composition of resources result in higher life expectancy in most of the countries. Hence, we might conclude that there is a positive relationship between life expectancy and income composition of resources, which is Human Development Index by this graph. Furthermore, we could also see that region sub-Saharan Africa had low HDI and low life expectancy, which may due to their poverty issues. Regions in Europe and 'Australia and New Zealand' had pretty high HDI and high life expectancy. We removed countries 'Haiti', 'United Kingdom of Great Britain and Northern Ireland', 'United Republic of Tanzania', 'Cote d'Ivoire', and 'Republic of Korea' since their ICR values are imputed as they were missing in data collection.
+
+### Line Graph of Life Expectancy vs Total Expenditure for each Sub-region Group of Country
+
+This plot is shown in the 'Plot 3-B' under the interactive visualization section in page: https://zhoueeeeee.github.io/JSC370-Final-Project/
+
+To compare with the line graph we have for HDI, a line graph of total health expenditure versus life expectancy was also made. We cannot see any clear relationship between those two variables, which means health expenditure might be a less effective factor than HDI. Most of the regions having countries that across each level of expenditure. However, countries in sub-Saharan African also had lower life expectancy values.
+
+### Stacked Histogram of Schooling by Life Expectancy Levels
+
+This plot is shown in the 'Plot 4' under the interactive visualization section in page: https://zhoueeeeee.github.io/JSC370-Final-Project/
+
+Schooling: Number of years of Schooling(years)
+
+The stacked histogram of variable 'Schooling' was made. We differed each bar by life expectancy level. According to the plot, countries with high schooling had higher life expectancy level as the color goes darker from left to right. Most of the countries achieve high level of life expectancy when they had more than 10 years of schooling. There is no really big difference between the schooling of the counties with 'low' and 'medium' life expectancy level. Hence, we may have a weak positive relationship between schooling and life expectancy.
+
+
+## Model Fitting
+
+### Inferential Models Comparing HDI and Health Expenditure
+
+```{r echo=FALSE}
+ds <- dt1[, c(2, 3, 4, 14, 21, 22, 23)]
+colnames(ds) <- c('year', 'status', 'life_exp', 'total_exp', 'income_com', 'exp_level', 'hdi_level')
+```
+
+```{r echo=FALSE}
+ds <- ds[, status_ind := case_when(status == "Developed" ~ 1, 
+                                   status == "Developing" ~ 0)
+
+      ]
+```
+
+To compare whether HDI or health expenditure have stronger relationship with life expectancy, we use them as predictors and fit linear. linear mixed (year as random effect), and spline models. Since we also want to add consideration of development status, we will fit all the models and adjusted by status again.
+
+a) Models without adjusted by development status
+   
+   Linear models:  
+   
+   M1: Total expenditure as predictor: lm(life_exp ~ total_exp, data = ds)  
+   M2: Income composition of resources as predictor: lm(life_exp ~ income_com, data = ds)  
+
+   Linear mixed models:  
+
+   M3: Total expenditure as fixed effect and year as random effect: lmer(life_exp ~ total_exp + (1|year), data = ds)  
+   M4: Income composition of resources as fixed effect and year as random effect: lmer(life_exp ~ income_com + (1|year), data = ds)  
+
+   Spline models:  
+   
+   M5: Total expenditure as smooth terms: gam(life_exp~ s(total_exp,bs="cr",k=3),data=ds)  
+   M6: Income composition of resources as smooth terms: gam(life_exp~ s(income_com,bs="cr",k=3),data=ds)  
+
+b) Models with adjusted by development status
+
+   Linear models:  
+   M7: Total expenditure and status as predictor: lm(life_exp ~ total_exp + status_ind, data = ds)  
+   M8: Income composition of resources and status as predictor: lm(life_exp ~ income_com + status, data = ds)  
+
+   Linear mixed models:  
+
+   M9: Total expenditure and status as fixed effect and year as random effect: lmer(life_exp ~ total_exp + status + (1|year), data = ds)   
+   M10: Income composition and status of resources as fixed effect and year as random effect: lmer(life_exp ~ income_com + status + (1|year), data = ds)  
+
+   Spline models:  
+   M11: Total expenditure as smooth terms adjusted by status: gam(life_exp~ s(total_exp, bs="cr",k=5) + status,data=ds)  
+   M12: Income composition of resources as smooth terms adjusted by status: gam(life_exp~ s(income_com, bs="cr",k=3) + status, data=ds)  
+
+
+```{r message = FALSE, warning = FALSE, echo=FALSE}
+M5 <- gam(life_exp~ s(total_exp,bs="cr",k=3),data=ds)
+rsqM5 <- summary(M5)$r.sq
+
+M1 <- lm(life_exp ~ total_exp, data = ds)
+rsqM1 <- summary(M1)$r.squared
+
+M2 <- lm(life_exp ~ income_com, data = ds)
+rsqM2 <- summary(M2)$r.squared
+
+M3 <- lmer(life_exp ~ total_exp + (1|year), data = ds)
+
+M4 <- lmer(life_exp ~ income_com + (1|year), data = ds)
+
+M5 <- gam(life_exp~ s(total_exp,bs="cr",k=3),data=ds)
+rsqM5 <- summary(M5)$r.sq
+
+M6 <- gam(life_exp~ s(income_com,bs="cr",k=3),data=ds)
+rsqM6 <- summary(M6)$r.sq
+
+M7 <- lm(life_exp ~ total_exp + status_ind, data = ds)
+rsqM7 <- summary(M7)$r.squared
+
+M8 <- lm(life_exp ~ income_com + status, data = ds)
+rsqM8 <- summary(M8)$r.squared
+
+M9 <- lmer(life_exp ~ total_exp + status + (1|year), data = ds)
+
+M10 <- lmer(life_exp ~ income_com + status + (1|year), data = ds)
+
+M11 <- gam(life_exp~ s(total_exp, bs="cr",k=5) + status,data=ds)
+rsqM11<- summary(M11)$r.sq
+
+M12 <- gam(life_exp~ s(income_com, bs="cr",k=3) + status, data=ds) # knots = 10
+rsqM12<- summary(M12)$r.sq
+```
+
+### Machine Learning Models Predict on Life Expectancy
+
+Discussed Variable meaning:
+  
+- income_com: Income composition of resources, which is HDI in our research.
+- Adult Mortality: Adult Mortality Rates of both sexes (probability of dying between 15 and 60 years per 1000 population)
+- HIV/AIDS: Deaths per 1 000 live births HIV/AIDS (0-4 years)
+- Schooling: Number of years of Schooling(years)
+- BMI: Average Body Mass Index of entire population
+
+#### Regression Tree
+  
+In this section, we will perform basic machine learning techniques on our life expectancy data. We will fit regression tree, bagging, random forest, gradient boosting, and extreme gradient boosting models to predict life expectancy based on the social factors in the data. Our aim is finding a most predictive model from them by comparing their MSE.
+
+```{r warning = FALSE, echo=FALSE}
+# Remove country column
+dt_noc <- dt1[,-c(1, 2, 23, 24, 25)]
+
+colnames(dt_noc) <- c('status', 'life_exp', 'adult_mo', 'infant_dea', 'alcohol','percent_exp', 'hepatitis_B','Measles','BMI', 'under_f_dea', 'polio', 'total_exp', 'diphtheria', 'HIV_AIDS', 'GDP', 'population', 'thinnes1_19s', 'thinnes5_9','income_com', 'schooling')
+
+# train test split
+set.seed(2001)
+train_ind <- sample(1:nrow(dt_noc),round(0.7*nrow(dt_noc)))
+train1 <- dt_noc[train_ind,]
+test1 <- dt_noc[-train_ind,]
+
+### Data set 2
+
+# dt2$status_num <- ifelse(dt2$Status=="Developed",1,0)
+dt2<- dt1[,-c(1, 2, 3, 23, 24)]
+
+colnames(dt2) <- c('life_exp', 'adult_mo', 'infant_dea', 'alcohol','percent_exp', 'hepatitis_B','Measles','BMI', 'under_f_dea', 'polio', 'total_exp', 'diphtheria', 'HIV_AIDS', 'GDP', 'population', 'thinnes1_19s', 'thinnes5_9','income_com', 'schooling', 'status_num')
+
+# train test split
+set.seed(2001)
+train = sample(1:nrow(dt2), floor(nrow(dt2) * 0.7))
+test = setdiff(1:nrow(dt2), train)
+
+```
+
+By fitting a regression tree, we are able to find a optimal complexity parameter that has the minimal cross-validation error in the CP table. Based on that optimal complexity parameter, we are able to pruned the tree which help to reduce complexity and over-fitting of our decision tree model and improve prediction. Its MSE was also calculated for further model comparison. Since there are too may splits in our pruned regression tree. Visualizing it could be difficult but we can still evaluate it by its MSE.
+```{r warning = FALSE, echo=FALSE}
+# Fitting regression tree
+treefit <- rpart(life_exp~., method = "anova", 
+                 control = list(minsplit=10,minbucket=3,cp=0,xval=10),
+                 data = train1)
+
+xe <- min(treefit$cptable[,"xerror"])
+optimalcp = treefit$cptable[which.min(treefit$cptable[,"xerror"]),"CP"]
+treepruned <- prune(treefit, cp=optimalcp)
+
+tree_pred <- predict(treepruned,test1)
+test_tree <- cbind(test1,tree_pred)
+tree_mse <- mean((test_tree$tree_pred - test_tree$life_exp)^2)
+
+```
+
+#### Bagging and Radom Forest
+  
+Fitting random forest and bagging models help us to find the most important features to predict life expectancy. 
+
+```{r warning = FALSE,echo=FALSE, fig.width=7.5, fig.height=3.5}
+sal_bag<- randomForest(life_exp~.,data=train1,mtry=ncol(train1) - 1,na.action=na.omit) # Change variable name
+varImpPlot(sal_bag,n.var = 8,col="red", main = "Variable Importance Plot for Bagging Model")
+yhat.bag = predict(sal_bag, newdata = test1)
+bag_mse <- mean((yhat.bag-test1$life_exp)^2)
+```
+
+```{r warning = FALSE, echo=FALSE, fig.width=7.5, fig.height=3.5}
+sal_rf <- randomForest(life_exp~., data=train1,na.action = na.omit)
+varImpPlot(sal_rf,n.var=8,col="blue", main = "Variable Importance Plot for Random Forest Model")
+yhat.rf = predict(sal_rf, newdata = test1)
+rf_mse <- mean((yhat.rf-test1$life_exp)^2)
+```
+
+According to the variable importance plots we have for bagging and random forest. Variable 'income_com' is the most important features in both models. Adult mortality, HIV/AIDS deaths, and BMI are also quite significant in both models.
+
+#### Gradient Boosting Model
+  
+Gradient Boosting Model was also fitted to our data. To improve performance, we did parameter tuning on both shrinkage parameter and number of trees. We picked 1000, 2000, and 3000 as possible numbers of trees. Since there is pretty much tree fitted, which means a slightly large learning rate could be helpful on decaying the gradient. Hence, the range for possible learning rate we picked is 0.01 to 0.05 by 0.0005 on each step.
+
+##### Plot of Training and Testing MSE
+  
+We also calculate each model's training MSE, cross validation error, and testing MSE for comparison to pick our final boosting model.
+
+```{r warning=FALSE, echo=FALSE, fig.width=8, fig.height=4}
+mse <- c()
+cv <- c()
+test_mse <- c()
+
+mse2 <- c()
+cv2 <- c()
+test_mse2 <- c()
+
+mse3 <- c()
+cv3 <- c()
+test_mse3 <- c()
+
+for (lr in seq(0.01, 0.05, 0.005)){
+  set.seed(2496)
+  sal_boost = gbm(life_exp~., data = dt2[train,], distribution = "gaussian", n.trees = 1000, 
+                  shrinkage = lr, interaction.depth = 1, cv.folds = 10, class.stratify.cv = T)
+  yhat_boost <- predict(sal_boost, newdata = dt2[test,], n.trees = 1000)
+  diff <- yhat_boost-dt2[test, "life_exp"]
+  boost_mse <- apply(diff^2, 2, mean)
+  test_mse <- c(test_mse, boost_mse)
+  mse <- c(mse, sal_boost$train.error[1000])
+  cv <- c(cv, sal_boost$cv.error[1000])
+  
+  sal_boost2 = gbm(life_exp~., data = dt2[train,], distribution = "gaussian", n.trees = 2000, 
+                  shrinkage = lr, interaction.depth = 1, cv.folds = 10, class.stratify.cv = T)
+  yhat_boost2 <- predict(sal_boost2, newdata = dt2[test,], n.trees = 2000)
+  diff2 <- yhat_boost2-dt2[test, "life_exp"]
+  boost_mse2 <- apply(diff2^2, 2, mean)
+  test_mse2 <- c(test_mse2, boost_mse2)
+  mse2 <- c(mse2, sal_boost2$train.error[2000])
+  cv2 <- c(cv2, sal_boost2$cv.error[2000])
+  
+  sal_boost3 = gbm(life_exp~., data = dt2[train,], distribution = "gaussian", n.trees = 3000, 
+                  shrinkage = lr, interaction.depth = 1, cv.folds = 10, class.stratify.cv = T)
+  yhat_boost3 <- predict(sal_boost3, newdata = dt2[test,], n.trees = 3000)
+  diff3 <- yhat_boost3-dt2[test, "life_exp"]
+  boost_mse3 <- apply(diff3^2, 2, mean)
+  test_mse3 <- c(test_mse3, boost_mse3)
+  mse3 <- c(mse3, sal_boost3$train.error[3000])
+  cv3 <- c(cv3, sal_boost3$cv.error[3000])
+  
+  }
+```
+  
+  
+```{r echo=FALSE, fig.width=9, fig.height=3, fig.pos = "H"}
+shrinkage_val <- seq(0.01, 0.05, 0.005)
+x <-  data.frame(sh = shrinkage_val,
+                   mse = mse)
+train1 <- ggplot(x, aes(x = sh, y = mse)) +
+  geom_point() +
+  xlab("Shrinkage parameter") +
+  ylab("Training MSE for 3000 tree") +
+  geom_line(aes(y = cv), color = 'blue') + theme_pubclean()
+
+x <-  data.frame(sh = shrinkage_val,
+                   mse = mse2)
+train2 <- ggplot(x, aes(x = sh, y = mse)) +
+  geom_point() +
+  xlab("Shrinkage parameter") +
+  ylab("Training MSE for 3000 tree") +
+  geom_line(aes(y = cv2), color = 'blue') + theme_pubclean()
+
+x <-  data.frame(sh = shrinkage_val,
+                   mse = mse3)
+train3 <- ggplot(x, aes(x = sh, y = mse)) +
+  geom_point() +
+  xlab("Shrinkage parameter") +
+  ylab("Training MSE for 3000 tree") +
+  geom_line(aes(y = cv3), color = 'blue') + theme_pubclean()
+
+ggarrange(train1, train2, train3, ncol = 3, nrow = 1)
+# 
+# mse_df <-  data.frame(s = shrinkage, mse = mse, cv = cv)
+# ggplot(mse_df, aes(x = s, y = mse,color="Mean Squared Error (MSE)")) + geom_point() + geom_smooth(method = 'loess', formula ='y ~ x') +xlab("shrinkage") +ylab("MSE for training data") +geom_line(aes(y = cv,color="Cross Validation Error"))+ labs(title ="Error of Training Dataset verses Shrinkage Parameter")
+
+```
+
+According to the plot, we could find that as the shrinkage increases, the training MSE decreases. The reason for that may be we fit the training set better and better when the shrinkage increases, which may lead to an over-fitting. Hence, we need to pick the optimal value of shrinkage parameter by their cross validation error. For 1000 and 2000 trees models, the validation error is gradually decrease when learning rate increase. However, The validation error increases when we have learning rate over 0.45 in 3000 trees model, which means higher shrinkage may not reduce validation error. Additionally, higher learning rate also result in high risk of over-fitting. Hence, pick learning rate around 0.04 would be optimal. 
+
+```{r echo=FALSE, fig.width=9, fig.height=3, fig.pos = "H"}
+shrinkage_val <- seq(0.01, 0.05, 0.005)
+x <-  data.frame(sh = shrinkage_val,
+                   mse = test_mse)
+test1 <- ggplot(x, aes(x = sh, y = mse)) +
+  geom_point() +
+  xlab("Shrinkage parameter") +
+  ylab("Testing MSE for 1000 tree")
+
+shrinkage_val <- seq(0.01, 0.05, 0.005)
+x <-  data.frame(sh = shrinkage_val,
+                   mse = test_mse2)
+test2 <- ggplot(x, aes(x = sh, y = mse)) +
+  geom_point() +
+  xlab("Shrinkage parameter") +
+  ylab("Testing MSE for 2000 tree")
+
+shrinkage_val <- seq(0.01, 0.05, 0.005)
+x <-  data.frame(sh = shrinkage_val,
+                   mse = test_mse3)
+test3 <- ggplot(x, aes(x = sh, y = mse)) +
+  geom_point() +
+  xlab("Shrinkage parameter") +
+  ylab("Testing MSE for 3000 tree")
+
+ggarrange(test1, test2, test3, ncol = 3, nrow = 1)
+```
+
+According to our three plots of testing MSE for each number of trees with different shrinkage parameter, we can see that the testing MSE increases or become flatten after x = 0.04, which means we should pick it as our value of shrinkage parameter. For number of trees, '1000' has the largest MSE around 7.2. However, for '2000' and '3000, their MSE are similar, both are around 6.75. To reduce our model complexity and save efficiency, we should pick 2000 as our number of trees. Hence, our final learning rate is 0.04 and 2000 tress will be fitted and we calculate its test MSE for further model comparison.
+
+```{r warning = FALSE, echo=FALSE}
+sal_boost1 = gbm(life_exp~., data = dt2[train,], distribution = "gaussian", n.trees = 2000, 
+                  shrinkage = 0.04, interaction.depth = 1, cv.folds = 10, class.stratify.cv = T)
+yhat_boost <- predict(sal_boost1, newdata = dt2[test,], n.trees = 2000)
+diff <- yhat_boost - dt2[test, "life_exp"]
+boost_mse <- apply(diff^2, 2, mean)
+```
+
+```{r echo=FALSE, fig.width=7, fig.height=4}
+plot(sal_boost1$train.error, pch='.', ylab = "train error")
+lines(sal_boost1$cv.error, col = 'red')
+
+```
+
+According to the plot we have, the deviation between validation error and train error is become smaller as we have more iterations.
+
+```{r echo=FALSE, fig.width=6, fig.height=3}
+
+knitr::kable(summary(sal_boost1), caption = "Reletive influence for each variable in Gradient Boosting Model")
+```
+
+According to the variable importance plot we have, there is a clear difference in relative influence between variables. There are three most important variables: HDI(income_com), 'HIV/AIDS death', and adult mortality, that dominate our boosting model, which means simpler model may have similar performance. By the table for each variable and their corresponding relative influence in Gradient Boosting Model. The variable that is the most influential is 'income_com', indicating HDI, with relative influence 55.4197399. Variable 'total_exp', indicating health expenditure, has relative influence 1.5076932.
+
+### Perform Extreme Gradient Boosting
+
+Based on the wrangled data, we perform extreme gradient boosting model to predict life expectancy. We set up a tuning grid that can help us to perform grid search on eta, max_depth, and nrounds. Based on our data, and 'xgbTree' method, we train our xgb model on the tune grid.
+
+```{r echo=FALSE}
+set.seed(2496)
+train_control = trainControl(method = "cv", number = 10, search = "grid")
+
+tune_grid <- expand.grid(max_depth = c(1,3,5,7),
+                         nrounds = (1:10)*50,
+                         eta = c(0.01, 0.1, 0.3),
+                         gamma = 0,
+                         subsample = 1,
+                         min_child_weight = 1,
+                         colsample_bytree = 0.6
+                         
+)
+sal_xgb <- caret::train(life_exp~., data=dt2[train,], 
+                        method = "xgbTree", trControl = train_control, 
+                        tuneGrid = tune_grid, verbosity = 0)
+
+```
+
+After training, we have our variable importance plot.
+
+```{r echo=FALSE, fig.width=9, fig.height=3}
+
+plot(varImp(sal_xgb, scale = F), top = 11)
+yhat_xgb <- predict(sal_xgb, newdata = dt2[test,])
+diff1 <- yhat_xgb - dt2[test, "life_exp"]
+xgb_mse <- apply(diff1^2, 2, mean)
+```
+
+According to the plot, we can see that the difference of importance between variables are pretty clear. Variable 'income_com' is also the most important feature in extreme gradient boosting model. Total expenditure is the 11th important variable. We also find HIV/AIDS deaths and adult mortality, and schooling played an significant role in predicting life expectancy.
+
+\newpage
+
+# Result Section
+
+## Comparing all spline models
+```{r echo=FALSE, fig.width=6, fig.height=4}
+dfsp <- data.frame(models = c("total expenditure as smooth terms",
+                              "income composition of resources as smooth terms",
+                              "total expenditure as smooth terms adjusted by status",
+                              "income composition of resources as smooth terms adjusted by status"),
+                   R_square = c(rsqM5, rsqM6, rsqM11, rsqM12))
+
+knitr::kable(dfsp, caption = "Comparing all R squared of all spline models")
+plot(M6)
+
+```
+The model of income composition of resources as smooth terms (M6) has the highest R squared value, which is 0.790346. Looking at the spline model we have, the trend is not curvy, which indicate that a liner model may be preferred to reduce overfitting.
+
+
+## Comparing all linear models
+
+```{r echo=FALSE}
+dflm <- data.frame(models = c("total expenditure as predictor",
+                              "income composition of resources as predictor",
+                              "total expenditure and status as predictor",
+                              "income composition of resources and status as predictor"),
+                   R_square = c(rsqM1, rsqM2, rsqM7, rsqM8))
+
+knitr::kable(dflm, caption = "Comparing all R squared of all linear models")
+```
+
+```{r fig.width=8, fig.height=4.5, echo=FALSE}
+par(mfrow=c(2,2))
+plot(M8)
+```
+
+According to the all R squared value we have for all linear models, the one with income composition of resources and status as predictor (M8) have the highest R squared. Residual vs fitted plot, QQ plot, scale-location plot, and leverage plot were checked for linear model assumptions. Only the QQ plot shown a deviation exist on the left tail, which means normality is slightly violated. Other assumptions are satisfied. Hence, we do have a good fit since assumptions are mostly satisfied.
+
+## Comparing all linear mixed models
+
+To compare all of the linear mixed models we have, we need to compare them by likelihood ratio test (lrtest()). We compare two model with different complexity by the p-value we have in the test. If the p-value is smaller than our significant level 0.05, we are able to reject null hypothesis that simpler model have similar prediction accuracy as more complex model, which means picking complex model is more statistically significant. Hence, by our model construction, the complex model in each pair of test is the model that include developing status variable. Then, we compare (M3, M9) and (M4, M10).
+
+```{r message = FALSE, warning = FALSE, echo=FALSE}
+lr1 <- lrtest(M3, M9)$"Pr(>Chisq)"[2]
+lr2 <- lrtest(M4, M10)$"Pr(>Chisq)"[2]
+
+lrtest1 <- data.frame(lrtest = c("Likelihhod ratio test between M3 and M9 (Total Expenditure)",
+                              "Likelihhod ratio test between M4 and M10 (HDI)"),
+                   P_value = c(lr1, lr2))
+
+knitr::kable(lrtest1, caption = "Linear mixed model comparisons")
+```
+
+According to the p-value we have, only adding variable status to total expenditure model has a significant improvement. Hence, M9 and M4 would be compared by AIC with final linear and spline models. They cannot be compared by likelihood ratio test again since they does not sharing same predictors.
+
+## Comparing picked linear model, picked spline model, and picked linear mixed models
+
+```{r echo=FALSE}
+dfcp <- data.frame(models = c("linear model", "spline model"),
+                   R_square = c(rsqM8, rsqM6))
+knitr::kable(dfcp, caption = "Comparing R square for picked linear model and picked spline model")
+
+AIC3 <- AIC(M8)
+AIC1 <- AIC(M6)
+AIC2 <- AIC(M4)
+AIC4 <- AIC(M9)
+
+
+AICtest <- data.frame(Statistics = c("AIC of picked linear model M8: ",
+                              "AIC of picked spline model M6: ",
+                              "AIC of picked linear mixed model: M4",
+                              "AIC of picked linear mixed model: M9"),
+                   `AIC value` = c(AIC3, AIC1, AIC2, AIC4))
+
+knitr::kable(AICtest, caption = "Comparing AIC for all Regression model")
+```
+
+According to the table we have, the R squared value for both models are pretty close. Though spline model yields better fit based on the score, a linear model may be better choice since the spline model we plotted is very close to a linear line. Choosing a linear model with almost the same wellness of fitting could reduce over-fitting. 
+
+By comparing AIC in Table, though spline model also has the smallest AIC value, most of them have very close AIC. Both our linear mixed model have higher AIC values. Since the linear model is our next-best model and we would like to reduce over-fitting, the linear model with Income composition of resources and status as predictor as predictors is our best model in this section, which means income composition of resources (HDI) has stronger relationship with life expectancy than health expenditure.
+
+## Comparing machine learning models by MSE
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+dfsp <- data.frame(models = c("Pruned Regression Tree",
+                              "Bagging",
+                              "Random Forest",
+                              "Gradient Boosting",
+                              "Extreme Gradient Boosting"),
+                   MSE = c(tree_mse, bag_mse, rf_mse, boost_mse, xgb_mse))
+
+knitr::kable(dfsp, caption = "Comparing MSE of all models")
+```
+
+According to the MSE table, we can see that Extreme Gradient Boosting model has the smallest test MSE, which is 3.345888. Pruned Regression Tree has the largest MSE 6.978559, indicating a worse fit. Low test MSE shows high performance and low over-fitting. Hence, we may pick extreme gradient boosting model as our final model to predict life expectancy.
+
+\newpage
+
+# Conclusion and Summary
+
+## Answering research question
+
+1. Is government health expenditure have greater impact on life expectancy than Human Development Index?  
+
+According to the data exploratory plots we have, the relationship between health expenditure and life expectancy is not strong. The models that only contains total expenditure and status highest AIC, which means they fitted badly. However, in most of our plots, the relationship between HDI and life expectancy is strong. We also have pretty well fitted models with HDI as predictor have adjusted R squared over 0.79. Furthermore, in our variable importance plots in machine learning models, HDI is the one of the most important features across all models. Hence, we concluded that HDI have greater impact on life expectancy than the other.
+
+2. Does life expectancy also depends on the development status of the country?  
+
+Though including it did improve model performance, adding development status into our model does not have any significant effect according to the model comparison results.
+
+3. How to accurately predict life expectancy by social factors?
+
+Predicting life expectancy by extreme gradient boosting model had the best performance. Variable 'HIV_AIDS', 'income_com', 'adult_mo', and 'schooling' are the most important features to predict life expectancy.
+
+## Discussion and limitation
+
+According to the result we have, if the governments aim to increase life expectancy of the population, they should focus on factors that will increase the HDI. Not just spending too much money health development. In may cases, better health treatment and medical technologies does not benefit everyone. For most of the population, even poorer people, their health conditions need much longer time to respond to larger health expenditure than richer people. Additionally, people who would like to search for some counties to stay and try to live longer could choose countries with high HDI, rather than high health expenditure. For government or social organizations that would like to predict local life expectancy, they need to focus on HIV infection records, local HDI, adult mortality, and number of years of schooling. Their values are statistically significant on predicting life expectancy. Fitting a extreme gradient boosting model would yield more accurate values a based on our research result.
+  
+Limitations:  
+
+1. Since we impute NAs by mean value, we may result in biased standard error, variance, and sample mean. Our estimate may be pulled by other observations.  
+
+2. Since we have 16 years of observations per country and we investigate the data-set as a whole, our observations are not totally independent. Also, we ignored the structural difference between countries, like race and climate.  
+
+3. Though in model comparison, some spline models have better performance than the linear model, picking a spline model also increase our risk on over-fitting.  
+
+4. We only fitted spline models with 3 knots. We should also vary it to compare spline models with different knot numbers.  
+
+5. In many of our machine learning models, we can see there are only a few variables that dominate our model, which means, in further study, we could reduce the model complexity but also have similar performance.
+
+# Reference
+
+Douglas Bates, Martin Maechler, Ben Bolker, Steve Walker (2015). Fitting Linear Mixed-Effects Models Using lme4.
+  Journal of Statistical Software, 67(1), 1-48. doi:10.18637/jss.v067.i01.
