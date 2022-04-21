@@ -83,7 +83,7 @@ This is not our main data and all the data exploration part is focusing on our p
 
 
 ```{r include=FALSE}
-data <- read.csv('./data/Life Expectancy Data.csv', check.names = F)
+data <- read.csv('./le/Life Expectancy Data.csv', check.names = F)
 ```
 
 ## Exploratory Data Analysis
