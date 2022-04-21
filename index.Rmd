@@ -1,5 +1,5 @@
 ---
-title: "Main"
+title: "JSC370-Final project"
 author: "Shiyuan Zhou"
 output: 
  html_document:
@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 <br>
 
-# JSC370-Final project Introduction
+# Introduction
 
 How humans can live longer is one of the most debated topics in human history. In an era of rapid advances in medicine, education, and technology, human health has improved significantly but will humans necessarily live longer? The differences between countries are not only due to race and region but the imbalance on health care and medical technologies across countries. However, in many cases, it is difficult to spread or teach advanced medical treatments to other countries. Does the absence of them determines lower average life expectancy? Obviously not, medical treatment is not the only factor that determines the life expectancy of human beings but also the climate and environment, social factors, etc.
 
