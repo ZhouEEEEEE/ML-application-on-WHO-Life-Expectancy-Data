@@ -42,9 +42,7 @@ Git-hub repo: https://github.com/ZhouEEEEEE/JSC370-Final-Project
 You may click the button on the top right of my page to download the full pdf version of my final project.
 
 <br>
-
 <br>
-
 <br>
 
 # Interactive Visualizations
@@ -52,7 +50,6 @@ You may click the button on the top right of my page to download the full pdf ve
 <br>
 I will showcase a few interactive visuals in this page
 <br>
-
 ```{r message=FALSE, echo=FALSE, warning=FALSE}
 library(dplyr)
 library(data.table)
