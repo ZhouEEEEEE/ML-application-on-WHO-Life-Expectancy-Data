@@ -41,7 +41,7 @@ Click the button to download!
 library(downloadthis)
 ## Link in Github repo
 download_link(
-  link = "https://raw.githubusercontent.com/aescocasti/Charta-Teitok/main/2021-10-07_cosuiza_header_comentado.xml",
+  link = "https://github.com/ZhouEEEEEE/JSC370-Final-Project/raw/main/FP%20rmd%20file%20and%20pdf/370-Final-Project.pdf",
   button_label = "Download Full Project PDF",
   button_type = "success",
   has_icon = TRUE,
