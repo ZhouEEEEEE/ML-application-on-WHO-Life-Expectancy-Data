@@ -1,3 +1,14 @@
+---
+title: "JSC370-Final Main Page"
+author: "Shiyuan Zhou"
+output: 
+    html_document:
+        toc: TRUE
+        toc_float: TRUE
+---
+
+
+<br>
 
 # JSC370-Final project Introduction
 
@@ -7,6 +18,8 @@ In fact, most of the influencing factors come from the government and the social
 
 Github Repository(For midterm project): https://github.com/ZhouEEEEEE/JSC370-Midterm.git
 
+<br>
+
 ## Research Questions
 
 -   1\. Is government health expenditure have higher impact on life expectancy than Human Development Index?
@@ -14,3 +27,217 @@ Github Repository(For midterm project): https://github.com/ZhouEEEEEE/JSC370-Mid
 -   2\. Does it also depends on the development status of the country?
 
 -   3\. What are the important features that could help to predict life expectancy?
+
+<br>
+
+<br>
+
+<br>
+
+# Visualizations
+
+<br>
+I will showcase a few interactive visuals in this page
+<br>
+
+```{r setup, message=FALSE, echo=FALSE, warning=FALSE}
+library(dplyr)
+library(data.table)
+library(tidyverse)
+library(plotly)
+library(knitr)
+library(widgetframe)
+library(dtplyr)
+library(ggplot2)
+library(mgcv)
+library(zoo)
+library(leaflet)
+library(ggpubr)
+library(lme4)
+library(lmtest)
+library(tidyverse)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+library(gbm)
+library(xgboost)
+library(caret)
+library(wesanderson)
+
+data <- read.csv('Life Expectancy Data.csv', check.names = F)
+for(i in 1:ncol(data)) {
+  data[ , i][is.na(data[ , i])] <- mean(data[ , i], na.rm = TRUE)
+}
+
+data <- data[ which(data$ `Income composition of resources` > 0.0), ]
+dt <- data.table(data)
+
+data_eda <- dt[, life_expectancy_level := case_when(dt[, `Life expectancy`] < 50 ~ "low", 
+                               dt[, `Life expectancy`] <= 65 ~ "medium",
+                               dt[, `Life expectancy`] <= 80 ~ "high",
+                               dt[, `Life expectancy`] > 80 ~ "very high")
+      ]
+data_eda <- data.frame(data_eda)
+data_eda$life_expectancy_level <- factor(data_eda$life_expectancy_level, levels = c("low", "medium", "high", "very high"))
+
+
+dta <- dt[, expenditure_level := case_when(dt[, `Total expenditure`] < 3 ~ "low", 
+                               dt[, `Total expenditure`] <= 5 ~ "medium",
+                               dt[, `Total expenditure`] <= 9 ~ "high",
+                               dt[, `Total expenditure`] > 9 ~ "very high")
+      ]
+
+dt1 <- dta[, hdi_level := case_when(dta[, `Income composition of resources`] < 0.55 ~ "low", 
+                               dta[, `Income composition of resources`] <= 0.7 ~ "medium",
+                               dta[, `Income composition of resources`] <= 0.8 ~ "high",
+                               dta[, `Income composition of resources`] > 0.8 ~ "very high")]
+
+dt1$expenditure_level <- factor(dt1$expenditure_level, levels = c("low", "medium", "high", "very high"))
+dt1$hdi_level <- factor(dt1$hdi_level, levels = c("low", "medium", "high", "very high"))
+
+sexp <- dt1 %>% group_by(expenditure_level) %>%
+  summarise(
+    min_exp = min(`Total expenditure`, na.rm = TRUE),
+    max_exp = max(`Total expenditure`, na.rm = TRUE),
+    count = n()
+  ) %>% arrange(expenditure_level)
+
+shdi <- dt1 %>% group_by(hdi_level) %>%
+  summarise(
+    min_exp = min(`Income composition of resources`, na.rm = TRUE),
+    max_exp = max(`Income composition of resources`, na.rm = TRUE),
+    count = n()
+  ) %>% arrange(hdi_level)
+```
+
+```{css, echo = FALSE}
+.code-r { /* Code block */
+  font-size: 15px;
+}
+
+.code-r-small { /* Code block */
+  font-size: 10px;
+}
+dt1$`Total expenditure`
+```
+<br>
+
+# Interactive Visualization
+
+
+```{r include=FALSE, warning=FALSE}
+p1_plot <- ggplot(dt1, aes(x = `HIV/AIDS`, y = `Life expectancy`, color = hdi_level)) +
+  geom_point(size = 0.5) +
+  geom_smooth(data = dt1, formula = y ~ s(x, bs="cr",k=5), method = "gam", col=2) +
+  theme_light() +
+  labs(title = "Life expectancy vs HIV/AIDS", x = "Deaths per 1 000 live births HIV/AIDS", y = "Life expectancy") + theme(legend.position = c(0.8, 0.2))
+p1_plot <- ggplotly(p1_plot)
+
+# max_year <- max(data$Year)
+new_data_2013 <- data.frame(dt1 %>% filter(Year==2013))
+
+p2_plot <- new_data_2013 %>%
+  plot_ly(x = ~Adult.Mortality, y=~Life.expectancy, type = 'scatter',
+          mode = "markers", color = ~hdi_level, size = ~Total.expenditure,
+          sizes = c(5, 70), marker = list(sizemode = "diameter", opacity = 0.5),
+          hover_info = "text",
+          text = ~paste(paste0("Country:", Country, "<br>"),
+                        paste0("Life Expectancy:", Life.expectancy),
+                        paste0("Adult Mortality:", Adult.Mortality),
+                        paste0("Infant-Death per 1k:", infant.deaths),
+                        paste0("Under-Five-Death per 1k:", under.five.deaths),
+                        sep = "<br>")) %>%
+  
+  layout(title = "Adult Mortality-Life expectancy",
+         yaxis = list(title = "Life expectancy"),
+         xaxis = list(title = "Adult Mortality"),
+         hovermode = "compare", 
+         legend=list(title=list(text='<b> HDI Level </b>')))
+
+# Straight lines are 'Haiti', 'United Kingdom of Great Britain and Northern Ireland', 'United Republic of Tanzania', 'Cote d'Ivoire', and 'Republic of Korea'(Later Modification).
+
+line_data <- as.tibble(dt1)
+
+line_data <- line_data %>%
+  filter(Country!="Haiti") %>%
+  filter(Country!="United Kingdom of Great Britain and Northern Ireland") %>%
+  filter(Country!='United Republic of Tanzania') %>%
+  filter(Country!="Cote d'Ivoire") %>%
+  filter(Country!='Republic of Korea')
+
+p3_plot <- line_data %>%
+  plot_ly(x = ~`Income composition of resources`, y = ~`Life expectancy`, color = ~Country, type = "scatter", mode = "lines") %>%
+  layout(title = "Life Expectancy-ICR",
+         yaxis = list(title = "Life expectancy"),
+         xaxis = list(title = "Income Composition of Resources"),
+         hovermode = "compare")
+
+p4_plot <- dt1 %>%
+  plot_ly(x = ~`Total expenditure`, y = ~`Life expectancy`, color = ~Country, type = "scatter", mode = "lines") %>%
+  layout(title = "Life Expectancy-Total Expenditure",
+         yaxis = list(title = "Life expectancy"),
+         xaxis = list(title = "Total Expenditure"),
+         hovermode = "compare")
+
+
+hst <- ggplot(data = data_eda) + 
+ geom_histogram(mapping = aes(x = Schooling, fill = life_expectancy_level), bins = 30) +
+ scale_fill_manual(values=wes_palette(n=4, name="GrandBudapest2")) +
+ labs(x = "Schooling", title = "Histogram of schooling by life expectancy level")
+hst <- ggplotly(hst)
+
+```
+
+# {.tabset}
+
+## Plot 1
+
+### Scatter plot of life expectancy vs HIV/AIDS
+
+```{r warning=FALSE, echo=FALSE}
+p1_plot
+```
+HIV/AIDS: Deaths per 1000 live births HIV/AIDS (0-4 years)
+
+
+## Plot 2
+
+### Scatterplot of Life Expectancy vs Adult-Mortality for each level HDI level
+
+```{r warning=FALSE, echo=FALSE}
+p2_plot
+```
+
+Adult Mortality: Adult Mortality Rates of both sexes (probability of dying between 15 and 60 years per 1000 population)
+
+According to the plot we have for Life Expectancy vs Adult-Mortality. We able to examine their relationship, which is a inverse linear relationship. Higher adult Mortality may result in low life expectancy. I also control the size of the dot by each county's total health expenditure. We can see that countries with relatively low adult mortality and high life expectancy tend to have higher health expenditure. However, we also have a country 'Lesotho' that spend a lot on health expenditure but failed to reduce adult mortality and increase life expectancy.
+
+## Plot 3
+
+### Line Graph of Life Expectancy vs Income Composition of Resources
+
+```{r warning=FALSE, echo=FALSE}
+p3_plot
+```
+
+In this line graph, we have a line for life expectancy vs income composition of resources for a country. We can investigate that, generally, higher income composition of resources result in higher life expectancy in most of the countries. Hence, we could conclude that there is a positive relationship between life expectancy and income composition of resources, which is Human Development Index, from this graph. We removed countries 'Haiti', 'United Kingdom of Great Britain and Northern Ireland', 'United Republic of Tanzania', 'Cote d'Ivoire', and 'Republic of Korea' since their ICR values are imputed as they were missing in data collection.
+
+Straight lines are 'Haiti', 'United Kingdom of Great Britain and Northern Ireland', 'United Republic of Tanzania', 'Cote d'Ivoire', and 'Republic of Korea'(Later Modification).
+
+```{r warning=FALSE, echo=FALSE}
+p4_plot
+```
+
+## Plot 4
+
+```{r warning=FALSE, echo=FALSE}
+hst
+```
+
+<br>
+
+
+# {-}
+
+
+<br>

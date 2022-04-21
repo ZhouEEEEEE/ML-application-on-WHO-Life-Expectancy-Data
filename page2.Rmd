@@ -1,5 +1,5 @@
 ---
-title: "JSC370-Final project Data-Wranggling"
+title: "Visualizations"
 author: "Shiyuan Zhou"
 output: 
  html_document:
@@ -11,63 +11,30 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-<br>
-
-In this page, I will present the data wranggling processes for my final project.
-
-<br>
-
-## Data Wranggling
-
-```{r, message=FALSE, warning=FALSE, include=FALSE}
-library(data.table)
-library(dtplyr)
-library(dplyr)
-library(ggplot2)
-library(mgcv)
-library(zoo)
-library(leaflet)
-library(ggpubr)
-```
 
 ```{r include=FALSE}
 data <- read.csv('Life Expectancy Data.csv', check.names = F)
 ```
 
-### Missing values imputation
 
-```{r message=FALSE, warning=FALSE, include=FALSE}
-Sys.setenv(LANGUAGE = "en")
-```
+```{r echo=FALSE, warning=FALSE}
+data <- data[ which(data$ `Income composition of resources` > 0.0), ]
 
-```{r include = FALSE, echo=FALSE}
+dt <- data.table(data)
+
+data_eda <- dt[, life_expectancy_level := case_when(dt[, `Life expectancy`] < 50 ~ "low", 
+                               dt[, `Life expectancy`] <= 65 ~ "medium",
+                               dt[, `Life expectancy`] <= 80 ~ "high",
+                               dt[, `Life expectancy`] > 80 ~ "very high")
+      ]
+data_eda <- data.frame(data_eda)
+data_eda$life_expectancy_level <- factor(data_eda$life_expectancy_level, levels = c("low", "medium", "high", "very high"))
+
+
 for(i in 1:ncol(data)) {
   data[ , i][is.na(data[ , i])] <- mean(data[ , i], na.rm = TRUE)
 }
-```
 
-
-Firstly, we need to handle the missing values by imputation. We use mean value of current column to impute by for looping each column. 
-
-
-```{r echo=FALSE}
-
-ms <- data.frame(number_of_NAs = sum(is.na(data)))
-
-knitr::kable(ms, caption = "Number of missing values in currect dataset")
-
-```
-
-After imputation, we find the number of missing values is zero.
-
-
-### Create new variable
-
-To do further data exploration on different types of plots, we need both numeric and categorical 'Total expenditure' and 'Income composition of resources'. Converting current numeric variables to categorical variables helps us on stacked histograms, statistical summary graph, and etc. In many statistical research on social factors, health expenditure and HDI are always represented by different levels.
-
-Create a new categorical variable named "expenditure_level" using total expenditure on health of a country. (rare total expenditure < 3; low total expenditure 3-5; mild total expenditure 5-9; high total expenditure > 9) and a new categorical variable named "hdi_level" indicating level of income composition of resources of countries(low income composition < 0.55; medium income composition 0.55-0.7; high income composition 0.7-0.8; very high income composition > 0.8). Additionally, we should use factor() function to give our levels an order for future convenience.
-
-```{r echo=FALSE}
 dt <- data.table(data)
 
 dta <- dt[, expenditure_level := case_when(dt[, `Total expenditure`] < 3 ~ "low", 
@@ -83,43 +50,155 @@ dt1 <- dta[, hdi_level := case_when(dta[, `Income composition of resources`] < 0
 
 dt1$expenditure_level <- factor(dt1$expenditure_level, levels = c("low", "medium", "high", "very high"))
 dt1$hdi_level <- factor(dt1$hdi_level, levels = c("low", "medium", "high", "very high"))
+dt1$status_num <- ifelse(dt1$Status=="Developed",1,0)
 
-sexp <- dt1 %>% group_by(expenditure_level) %>%
-  summarise(
-    min_exp = min(`Total expenditure`, na.rm = TRUE),
-    max_exp = max(`Total expenditure`, na.rm = TRUE),
-    count = n()
-  ) %>% arrange(expenditure_level)
-knitr::kable(sexp, caption = "Summery table of min total expenditure, max total expenditure, and number of observations for each level of total expenditure")
-
-shdi <- dt1 %>% group_by(hdi_level) %>%
-  summarise(
-    min_exp = min(`Income composition of resources`, na.rm = TRUE),
-    max_exp = max(`Income composition of resources`, na.rm = TRUE),
-    count = n()
-  ) %>% arrange(hdi_level)
-knitr::kable(shdi, caption = "Summery table of min income composition of resources, max income composition of resources, and number of observations for each level of HDI
-")
+dt1$GDP <- scale(dt1$GDP)
+dt1$`percentage expenditure` <- scale(dt1$`percentage expenditure`)
+dt1$Population <- scale(dt1$Population)
 
 ```
 
 
-```{r warning=FALSE, echo=FALSE, caption = "Barchart of expenditure level", fig.width=8, fig.height=3}
-expl <- ggplot(data = dt1) + 
- geom_bar(mapping = aes(x = expenditure_level), fill = "#118DFF") +
- labs(title = "Barchart of expenditure level") +
-  theme_light()
+<br>
 
-hdi_l <- ggplot(data = dt1) + 
- geom_bar(mapping = aes(x = hdi_level), fill = "#118DFF") +
- labs(title = "Barchart of HDI level") +
-  theme_light()
+## Histograms
 
-ggarrange(expl, hdi_l, ncol = 2, nrow = 1)
+```{r warning=FALSE, echo=FALSE, caption = "Histograms", fig.width=8, fig.height=5}
+hst1 <- ggplot(data = dt1) + 
+ geom_histogram(mapping = aes(x = `Life expectancy`, fill = expenditure_level), bins = 30) +
+ scale_fill_manual(values = c("pink", "palevioletred1", "violetred3", "brown3")) +
+ labs(x = "Life expectancy(age)", title = "Histogram of life expectancy by expenditure level")
+
+ggplotly(hst1)
+```
+
+
+```{r warning=FALSE, echo=FALSE, caption = "Histograms", fig.width=8, fig.height=5}
+hst2 <- ggplot(data = dt1) + 
+ geom_histogram(mapping = aes(x = `Life expectancy`, fill = hdi_level), bins = 30) +
+ scale_fill_manual(values = c("slategray2", "skyblue3", "slateblue1", "slateblue4")) +
+ labs(x = "Life expectancy(age)", title = "Histogram of life expectancy by HDI level")
+
+ggplotly(hst2)
+```
+
+The first plot we have is the stacked histograms of life expectancy by expenditure level and HDI level. The proportion of each level of expenditure does not make a big difference across different ages. However, in the stacked histogram for HDI level, it is very clear that higher HDI level become more concentrated on the right, which is higher age. For different range of age, there always have a dominated HDI level. For example, for life expectancy less than 60, low HDI level dominates. Hence, according to these histograms, income composition of resources have a stronger relationship with life expectancy.
+
+<br>
+
+<br>
+
+## Bar Chart
+
+```{r warning=FALSE, echo=FALSE, caption = "Barchart", fig.width=8, fig.height=3.5}
+bar1 <- ggplot(data = dt1) + 
+ geom_bar(mapping = aes(x = expenditure_level, fill = `Status`)) +
+  scale_fill_manual(values = c("pink", "darkred")) +
+ labs(title = "Barchart of expenditure level by development status", x = "expenditure level")
+ggplotly(bar1)
+```
+
+
+```{r warning=FALSE, echo=FALSE, caption = "Barchart", fig.width=8, fig.height=3.5}
+bar2 <- ggplot(data = dt1) + 
+ geom_bar(mapping = aes(x = hdi_level, fill = `Status`)) +
+  scale_fill_manual(values = c("pink", "darkred")) +
+ labs(title = "Barchart of HDI level by development status", x = "HDI level")
+
+ggplotly(bar2)
 
 ```
 
-For most of the observations, they spend high level of health expenditure. There are fewer observations have low and very high health expenditure. However, for HDI level, most of the counties have low HDI level and the number of observations for each level do not have big gap.
+According to the barcharts we have for categorical variables expenditure level and HDI level by development status, developed countries tend to have higher expenditure and income composition of resources. However, the trend between HDI level and development status is stronger.
+
+```{r warning=FALSE, echo=FALSE, caption = "Barchart of Expenditure level by HDI level", fig.width=8, fig.height=4.5}
+hdihst <- ggplot(data = dt1) + 
+ geom_bar(mapping = aes(x = expenditure_level, fill = hdi_level)) +
+  scale_fill_manual(values = c("pink", "palevioletred1", "violetred3", "darkred")) +
+ labs(title = "Barchart of Expenditure level by HDI level", x = "Expenditure level")
+
+ggplotly(hdihst)
+```
+
+According to the bar chart we get for expenditure level by HDI level, the proportion of low and high HDI level is the largest in the low expenditure level. The proportion of medium HDI level is the largest in medium expenditure level and also for high and very high level. Hence, we could say counties with high expenditure level have higher probability to have high HDI level. Predictors expenditure and HDI may have a linear relationship.
 
 <br>
+
 <br>
+
+## Statistical summary graph
+
+```{r warning=FALSE, echo=FALSE, caption = "Statistical summary graph of FEV by BMI", fig.width=7, fig.height=4}
+a1 <- ggplot(data = dt1) + 
+ stat_summary(mapping = aes(x = expenditure_level, y = `Life expectancy`), fun.min = min,fun.max = max,fun = median, size = 1.5) +
+  labs(y = "life expectancy", x = "expenditure level") + theme_minimal()
+a1
+```
+
+
+```{r warning=FALSE, echo=FALSE, caption = "Statistical summary graph of FEV by BMI", fig.width=8, fig.height=4}
+b1 <- ggplot(data = dt1) + 
+ stat_summary(mapping = aes(x = expenditure_level, y = `Life expectancy`, color = `Status`), fun.min = min, fun.max = max,fun = mean, size = 2) +
+  labs(y = "life expectancy", x = "expenditure level") + theme_minimal()
+ggplotly(b1)
+```
+
+According to the statistical summary graph for expenditure level, though mean of life expectancy in low level of expenditure level is higher, we may have an increasing trend between expenditure level and life expectancy. However, if we adjusted by development status, we can see that the trend is clear for developing countries but not for developed countries. The higher mean of life expectancy in low level of expenditure was pulled up by the values of developed countries as the orange points shows. Additionally, the range of life expectancy for each expenditure level as the distance from min to max is large, which means our model may not fit tightly.
+
+```{r warning=FALSE, echo=FALSE, caption = "Statistical summary graph of FEV by BMI", fig.width=7, fig.height=4}
+a <- ggplot(data = dt1) + 
+ stat_summary(mapping = aes(x = hdi_level, y = `Life expectancy`), fun.min = min,fun.max = max,fun = median, size = 1.5) +
+  labs(y = "life expectancy", x = "HDI level") + theme_minimal()
+a
+```
+
+
+```{r warning=FALSE, echo=FALSE, caption = "Statistical summary graph of FEV by BMI", fig.width=8, fig.height=4}
+b <- ggplot(data = dt1) + 
+ stat_summary(mapping = aes(x = hdi_level, y = `Life expectancy`, color = `Status`), fun.min = min,fun.max = max,fun = mean, size = 2) +
+  labs(y = "life expectancy", x = "HDI level") + theme_minimal()
+ggplotly(b)
+```
+
+The statistical summary graph we have for HDI level shows a positive relationship between human development index and life expectancy. Adjusting by development status did not make a difference on our relationship. Additionally, the distance between min and max is much shorter than that in expenditure level which indicate a strong relationship and a tighter model fit.
+
+<br>
+
+<br>
+
+## Scatterplots
+
+The scatter plot of live expectancy vs total health expenditure and income composition of resources clearly present what actual model fitting will be in our dataset. 
+
+```{r warning=FALSE, echo=FALSE, caption = "Life expectancy vs total expenditure", message=FALSE, fig.width=8, fig.height=7, fig.pos = "H"}
+k <- ggplot(data = dt1) + 
+ geom_point(mapping = aes(x = `Total expenditure`, y = `Life expectancy`, color = `Status`), size = 0.5) + 
+ geom_smooth(mapping = aes(x = `Total expenditure`, y = `Life expectancy`), method = 'lm') +
+ labs(title = "Life expectancy vs total expenditure", x = "Total health expenditure", y = "Life expectancy") + theme_light() +
+  theme(legend.position='none')
+
+s <- ggplot(dt1, aes(x = `Total expenditure`, y = `Life expectancy`, color = `Status`)) +
+  geom_point(size = 0.5) +
+  geom_smooth(data = dt1, formula = y ~ s(x, bs="cr",k=5), method = "gam", col=2) +
+  labs(title = "Life expectancy vs total expenditure", x = "Total health expenditure", y = "Life expectancy") + theme_light() +
+  theme(legend.position='none')
+
+v <- ggplot(data = dt1) + 
+ geom_point(mapping = aes(x = `Income composition of resources`, y = `Life expectancy`, color = `Status`), size = 0.5) + 
+ geom_smooth(mapping = aes(x = `Income composition of resources`, y = `Life expectancy`), method = 'lm') +
+ labs(title = "Life expectancy vs ICR", x = "Income composition of resources", y = "Life expectancy") +
+  theme_light() +
+  theme(legend.position='none')
+
+z <- ggplot(dt1, aes(x = `Income composition of resources`, y = `Life expectancy`, color = `Status`)) +
+  geom_point(size = 0.5) +
+  geom_smooth(data = dt1, formula = y ~ s(x, bs="cr",k=5), method = "gam", col=2) +
+  theme_light() +
+  labs(title = "Life expectancy vs ICR", x = "Income composition of resources", y = "Life expectancy") + theme(legend.position = c(0.8, 0.2))
+ggarrange(k, s, v, z, ncol = 2, nrow = 2)
+```
+
+The two plots with two blue straight line on the left is the linear model fitted in each of the relationship. The two plots on the right is the cubic spline model we have, where the red curve is the fitted splines. According to the plots we have for live expectancy vs total health expenditure, the linear model is not very fitted to our data. Spline model could explain more variation and yields better fit but the decreasing trend when total health expenditure is greater than 12.5 may comes from over-fitting on the right-most points. Comparing to what we have in life expectancy vs income composition of resources, a positive linear trend is pretty clear. However, the fitted spline model does not make a big difference than the linear model. We need to further decide which model is better by adjusted R squared since spline model may have a higher adjusted R squared but the cost is over-fitting.
+
+<br>
+

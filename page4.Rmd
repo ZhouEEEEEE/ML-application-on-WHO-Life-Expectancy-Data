@@ -1,0 +1,205 @@
+---
+title: "Result Section"
+author: "Shiyuan Zhou"
+output: 
+    html_document:
+        toc: TRUE
+        toc_float: TRUE
+---
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+Sys.setenv(LANGUAGE = "en")
+library(data.table)
+library(dtplyr)
+library(dplyr)
+library(ggplot2)
+library(mgcv)
+library(zoo)
+library(leaflet)
+library(ggpubr)
+library(lme4)
+library(lmtest)
+library(tidyverse)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+library(gbm)
+library(xgboost)
+library(caret)
+
+rsqM5 <- 0.0379077
+rsqM6<- 0.7903460
+rsqM11 <- 0.2422911
+rsqM12 <- 0.7903013
+
+rsqM1 <- 0.0326109
+rsqM2 <- 0.7892844
+rsqM7 <- 0.2336129
+rsqM8 <- 0.7894635
+
+lr1 <- 0.000000
+lr2 <- 0.238603
+
+AIC3 <- 15172.54
+AIC1 <- 15159.38
+AIC2 <- 15177.39
+AIC4 <- 18542.02
+
+tree_mse <- 6.978559
+bag_mse <- 3.682146
+rf_mse <- 3.420492
+boost_mse <- 6.890100
+xgb_mse <- 3.557269
+```
+
+<br>
+
+<br>
+
+## Comparing all spline models
+
+```{r echo=FALSE, fig.width=6, fig.height=4}
+dfsp <- data.frame(models = c("total expenditure as smooth terms",
+                              "income composition of resources as smooth terms",
+                              "total expenditure as smooth terms adjusted by status",
+                              "income composition of resources as smooth terms adjusted by status"),
+                   R_square = c(rsqM5, rsqM6, rsqM11, rsqM12))
+
+knitr::kable(dfsp, caption = "Comparing all R squared of all spline models")
+```
+The model of income composition of resources as smooth terms (M6) has the highest R squared value, which is 0.790346.
+
+```{r echo=FALSE, out.width = '80%'}
+knitr::include_graphics("spline.png")
+```
+
+Looking at the spline model we have, the trend is not curvy, which indicate that a liner model may be preferred to reduce over-fitting.
+
+<br>
+
+<br>
+
+## Comparing all linear models
+
+```{r echo=FALSE}
+dflm <- data.frame(models = c("total expenditure as predictor",
+                              "income composition of resources as predictor",
+                              "total expenditure and status as predictor",
+                              "income composition of resources and status as predictor"),
+                   R_square = c(rsqM1, rsqM2, rsqM7, rsqM8))
+
+knitr::kable(dflm, caption = "Comparing all R squared of all linear models")
+```
+
+```{r pressure, echo=FALSE, fig.cap="Checking Assumptions", out.width = '100%'}
+knitr::include_graphics("assumptions.png")
+```
+
+According to the all R squared value we have for all linear models, the one with income composition of resources and status as predictor (M8) have the highest R squared. Residual vs fitted plot, QQ plot, scale-location plot, and leverage plot were checked for linear model assumptions. Only the QQ plot shown a deviation exist on the left tail, which means normality is slightly violated. Other assumptions are satisfied. Hence, we do have a good fit since assumptions are mostly satisfied.
+
+<br>
+
+<br>
+
+## Comparing all linear mixed models
+
+To compare all of the linear mixed models we have, we need to compare them by likelihood ratio test (lrtest()). We compare two model with different complexity by the p-value we have in the test. If the p-value is smaller than our significant level 0.05, we are able to reject null hypothesis that simpler model have similar prediction accuracy as more complex model, which means picking complex model is more statistically significant. Hence, by our model construction, the complex model in each pair of test is the model that include developing status variable. Then, we compare (M3, M9) and (M4, M10).
+```{r message = FALSE, warning = FALSE, echo=FALSE}
+
+lrtest1 <- data.frame(lrtest = c("Likelihhod ratio test between M3 and M9 (Total Expenditure)",
+                              "Likelihhod ratio test between M4 and M10 (HDI)"),
+                   P_value = c(lr1, lr2))
+
+knitr::kable(lrtest1, caption = "Linear mixed model comparisons")
+```
+
+According to the p-value we have, only adding variable status to total expenditure model has a significant improvement. Hence, M9 and M4 would be compared by AIC with final linear and spline models. They cannot be compared by likelihood ratio test again since they does not sharing same predictors.
+
+<br>
+<br>
+
+## Comparing picked linear model, picked spline model, and picked linear mixed models
+
+```{r echo=FALSE}
+dfcp <- data.frame(models = c("linear model", "spline model"),
+                   R_square = c(rsqM8, rsqM6))
+knitr::kable(dfcp, caption = "Comparing R square for picked linear model and picked spline model")
+
+
+AICtest <- data.frame(Statistics = c("AIC of picked linear model M8: ",
+                              "AIC of picked spline model M6: ",
+                              "AIC of picked linear mixed model: M4",
+                              "AIC of picked linear mixed model: M9"),
+                   `AIC value` = c(AIC3, AIC1, AIC2, AIC4))
+
+knitr::kable(AICtest, caption = "Comparing AIC for all Regression model")
+```
+
+According to the table we have, the R squared value for both models are pretty close. Though spline model yields better fit based on the score, a linear model may be better choice since the spline model we plotted is very close to a linear line. Choosing a linear model with almost the same wellness of fitting could reduce over-fitting. 
+
+By comparing AIC in Table, though spline model also has the smallest AIC value, most of them have very close AIC. Both our linear mixed model have higher AIC values. Since the linear model is our next-best model and we would like to reduce over-fitting, the linear model with Income composition of resources and status as predictor as predictors is our best model in this section, which means income composition of resources (HDI) has stronger relationship with life expectancy than health expenditure.
+
+<br>
+<br>
+
+## Comparing machine learning models by MSE
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+dfsp <- data.frame(models = c("Pruned Regression Tree",
+                              "Bagging",
+                              "Random Forest",
+                              "Gradient Boosting",
+                              "Extreme Gradient Boosting"),
+                   MSE = c(tree_mse, bag_mse, rf_mse, boost_mse, xgb_mse))
+
+knitr::kable(dfsp, caption = "Comparing MSE of all models")
+```
+
+According to the MSE table, we can see that Extreme Gradient Boosting model has the smallest test MSE, which is 3.345888. Pruned Regression Tree has the largest MSE 6.978559, indicating a worse fit. Low test MSE shows high performance and low over-fitting. Hence, we may pick extreme gradient boosting model as our final model to predict life expectancy.
+<br>
+
+<br>
+
+<br>
+
+# Conclusion and Summary
+
+<br>
+
+## Answering research question
+
+1. Is government health expenditure have greater impact on life expectancy than Human Development Index?  
+
+According to the data exploratory plots we have, the relationship between health expenditure and life expectancy is not strong. The models that only contains total expenditure and status highest AIC, which means they fitted badly. However, in most of our plots, the relationship between HDI and life expectancy is strong. We also have pretty well fitted models with HDI as predictor have adjusted R squared over 0.79. Furthermore, in our variable importance plots in machine learning models, HDI is the one of the most important features across all models. Hence, we concluded that HDI have greater impact on life expectancy than the other.
+
+2. Does life expectancy also depends on the development status of the country?  
+
+Though including it did improve model performance, adding development status into our model does not have any significant effect according to the model comparison results.
+
+3. How to accurately predict life expectancy by social factors?
+
+Predicting life expectancy by extreme gradient boosting model had the best performance. Variable 'HIV_AIDS', 'income_com', 'adult_mo', and 'schooling' are the most important features to predict life expectancy.
+
+<br>
+
+<br>
+
+## Discussion and limitation
+
+According to the result we have, if the governments aim to increase life expectancy of the population, they should focus on factors that will increase the HDI. Not just spending too much money health development. In may cases, better health treatment and medical technologies does not benefit everyone. For most of the population, even poorer people, their health conditions need much longer time to respond to larger health expenditure than richer people. Additionally, people who would like to search for some counties to stay and try to live longer could choose countries with high HDI, rather than high health expenditure. For government or social organizations that would like to predict local life expectancy, they need to focus on HIV infection records, local HDI, adult mortality, and number of years of schooling. Their values are statistically significant on predicting life expectancy. Fitting a extreme gradient boosting model would yield more accurate values a based on our research result.
+  
+Limitations:  
+
+1. Since we impute NAs by mean value, we may result in biased standard error, variance, and sample mean. Our estimate may be pulled by other observations.  
+
+2. Since we have 16 years of observations per country and we investigate the data-set as a whole, our observations are not totally independent. Also, we ignored the structural difference between countries, like race and climate.  
+
+3. Though in model comparison, some spline models have better performance than the linear model, picking a spline model also increase our risk on over-fitting.  
+
+4. We only fitted spline models with 3 knots. We should also vary it to compare spline models with different knot numbers.  
+
+5. In many of our machine learning models, we can see there are only a few variables that dominate our model, which means, in further study, we could reduce the model complexity but also have similar performance.
+
+<br>
+
+<br>

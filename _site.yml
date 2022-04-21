@@ -3,18 +3,21 @@ output_dir: "."
 navbar:
   title: "JSC370 Final Project-Shiyuan Zhou"
   left:
-    - text: "Home-Intruduction"
+    - text: "Intruduction & Interactive Visualizations"
       icon: fa-home fa-lg
       href: index.html
-    - text: "Data Scource"
+    - text: "Data"
       icon: fa-database fa-lg
       href: page1.html
-    - text: "Data Wranggling"
-      icon: fa-cogs fa-lg
+    - text: "Visualizations"
+      icon: fa-bar-chart fa-lg
       href: page2.html
-    - text: "Interactive Visualization"
-      icon: fa-picture-o fa-lg
+    - text: "Models"
+      icon: fa-rocket fa-lg
       href: page3.html
+    - text: "Results"
+      icon: fa-th-list fa-lg
+      href: page4.html
   right:
     - icon: fa-github fa-lg
       href: https://github.com/ZhouEEEEEE/JSC370-Final-Project/tree/main

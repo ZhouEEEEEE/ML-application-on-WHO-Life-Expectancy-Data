@@ -12,7 +12,7 @@
 <meta name="author" content="Shiyuan Zhou" />
 
 
-<title>Models</title>
+<title>Result Section</title>
 
 <script src="site_libs/header-attrs-2.13/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
@@ -382,172 +382,237 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">Models</h1>
+<h1 class="title toc-ignore">Result Section</h1>
 <h4 class="author">Shiyuan Zhou</h4>
 
 </div>
 
 
 <p><br></p>
-<div id="inferential-models-comparing-hdi-and-health-expenditure" class="section level2">
-<h2>Inferential Models Comparing HDI and Health Expenditure</h2>
-<p>To compare whether HDI or health expenditure have stronger relationship with life expectancy, we use them as predictors and fit linear. linear mixed (year as random effect), and spline models. Since we also want to add consideration of development status, we will fit all the models and adjusted by status again.</p>
-<div id="models-without-adjusted-by-development-status" class="section level3">
-<h3>Models without adjusted by development status</h3>
-<p>Linear models:</p>
-<p>M1: Total expenditure as predictor: lm(life_exp ~ total_exp, data = ds)<br />
-M2: Income composition of resources as predictor: lm(life_exp ~ income_com, data = ds)</p>
-<p>Linear mixed models:</p>
-<p>M3: Total expenditure as fixed effect and year as random effect: lmer(life_exp ~ total_exp + (1|year), data = ds)<br />
-M4: Income composition of resources as fixed effect and year as random effect: lmer(life_exp ~ income_com + (1|year), data = ds)</p>
-<p>Spline models:</p>
-<p>M5: Total expenditure as smooth terms: gam(life_exp~ s(total_exp,bs=“cr”,k=3),data=ds)<br />
-M6: Income composition of resources as smooth terms: gam(life_exp~ s(income_com,bs=“cr”,k=3),data=ds)</p>
-</div>
-<div id="models-with-adjusted-by-development-status" class="section level3">
-<h3>Models with adjusted by development status</h3>
-<p>Linear models:<br />
-M7: Total expenditure and status as predictor: lm(life_exp ~ total_exp + status_ind, data = ds)<br />
-M8: Income composition of resources and status as predictor: lm(life_exp ~ income_com + status, data = ds)</p>
-<p>Linear mixed models:</p>
-<p>M9: Total expenditure and status as fixed effect and year as random effect: lmer(life_exp ~ total_exp + status + (1|year), data = ds)<br />
-M10: Income composition and status of resources as fixed effect and year as random effect: lmer(life_exp ~ income_com + status + (1|year), data = ds)</p>
-<p>Spline models:<br />
-M11: Total expenditure as smooth terms adjusted by status: gam(life_exp~ s(total_exp, bs=“cr”,k=5) + status,data=ds)<br />
-M12: Income composition of resources as smooth terms adjusted by status: gam(life_exp~ s(income_com, bs=“cr”,k=3) + status, data=ds)</p>
 <p><br></p>
-<p><br></p>
-</div>
-</div>
-<div id="machine-learning-models-predict-on-life-expectancy" class="section level2">
-<h2>Machine Learning Models Predict on Life Expectancy</h2>
-<p><br></p>
-<div id="regression-tree" class="section level3">
-<h3>Regression Tree</h3>
-<p>In this section, we will perform basic machine learning techniques on our life expectancy data. We will fit regression tree, bagging, random forest, gradient boosting, and extreme gradient boosting models to predict life expectancy based on the social factors in the data. Our aim is finding a most predictive model from them by comparing their MSE.</p>
-<p>By fitting a regression tree, we are able to find a optimal complexity parameter that has the minimal cross-validation error in the CP table. Based on that optimal complexity parameter, we are able to pruned the tree which help to reduce complexity and over-fitting of our decision tree model and improve prediction. Its MSE was also calculated for further model comparison. Since there are too may splits in our pruned regression tree. Visualizing it could be difficult but we can still evaluate it by its MSE.</p>
-<p><br></p>
-<p><br></p>
-</div>
-<div id="bagging-and-radom-forest" class="section level3">
-<h3>Bagging and Radom Forest</h3>
-<p>Fitting random forest and bagging models help us to find the most important features to predict life expectancy.</p>
-<p><img src="bag.png" width="100%" /></p>
-<p><img src="rf.png" width="100%" /></p>
-<p>According to the variable importance plots we have for bagging and random forest. Variable ‘income_com’ is the most important features in both models.</p>
-<p><br></p>
-<p><br></p>
-</div>
-<div id="gradient-boosting-model" class="section level3">
-<h3>Gradient Boosting Model</h3>
-<p>Gradient Boosting Model was also fitted to our data. To improve performance, we did parameter tuning on both shrinkage parameter and number of trees. We picked 1000, 2000, and 3000 as possible numbers of trees. Since there is pretty much tree fitted, which means a slightly large learning rate could be helpful on decaying the gradient. Hence, the range for possible learning rate we picked is 0.01 to 0.05 by 0.0005 on each step.</p>
-<div id="plot-of-training-and-testing-mse" class="section level4">
-<h4>Plot of Training and Testing MSE</h4>
-<p>We also calculate each model’s training MSE, cross validation error, and testing MSE for comparison to pick our final boosting model.</p>
-<p><img src="boost1.png" width="100%" /></p>
-<p>According to the plot, we could find that as the shrinkage increases, the training MSE decreases. The reason for that may be we fit the training set better and better when the shrinkage increases, which may lead to an over-fitting. Hence, we need to pick the optimal value of shrinkage parameter by their cross validation error. For 1000 and 2000 trees models, the validation error is gradually decrease when learning rate increase. However, The validation error increases when we have learning rate over 0.45 in 3000 trees model, which means higher shrinkage may not reduce validation error. Additionally, higher learning rate also result in high risk of over-fitting. Hence, pick learning rate around 0.04 would be optimal.</p>
-<p><img src="boost2.png" width="100%" /></p>
-<p>According to our three plots of testing MSE for each number of trees with different shrinkage parameter, we can see that the testing MSE increases or become flatten after x = 0.04, which means we should pick it as our value of shrinkage parameter. For number of trees, ‘1000’ has the largest MSE around 7.2. However, for ‘2000’ and ’3000, their MSE are similar, both are around 6.75. To reduce our model complexity and save efficiency, we should pick 2000 as our number of trees. Hence, our final learning rate is 0.04 and 2000 tress will be fitted and we calculate its test MSE for further model comparison.</p>
-<p><img src="trainerr.png" width="100%" /></p>
-<p>According to the plot we have, the deviation between validation error and train error is become smaller as we have more iterations.</p>
-<p><img src="boostvarimp.png" width="90%" /></p>
+<div id="comparing-all-spline-models" class="section level2">
+<h2>Comparing all spline models</h2>
 <table>
-<caption>Reletive influence for each variable in Gradient Boosting Model</caption>
+<caption>Comparing all R squared of all spline models</caption>
+<colgroup>
+<col width="87%" />
+<col width="12%" />
+</colgroup>
 <thead>
 <tr class="header">
-<th align="left">var</th>
-<th align="right">rel.inf</th>
+<th align="left">models</th>
+<th align="right">R_square</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="left">income_com</td>
-<td align="right">53.5392601</td>
+<td align="left">total expenditure as smooth terms</td>
+<td align="right">0.0379077</td>
 </tr>
 <tr class="even">
-<td align="left">HIV_AIDS</td>
-<td align="right">27.6703612</td>
+<td align="left">income composition of resources as smooth terms</td>
+<td align="right">0.7903460</td>
 </tr>
 <tr class="odd">
-<td align="left">adult_mo</td>
-<td align="right">10.8676242</td>
+<td align="left">total expenditure as smooth terms adjusted by status</td>
+<td align="right">0.2422911</td>
 </tr>
 <tr class="even">
-<td align="left">total_exp</td>
-<td align="right">1.5201438</td>
-</tr>
-<tr class="odd">
-<td align="left">thinnes5_9</td>
-<td align="right">0.9870762</td>
-</tr>
-<tr class="even">
-<td align="left">diphtheria</td>
-<td align="right">0.8968485</td>
-</tr>
-<tr class="odd">
-<td align="left">under_f_dea</td>
-<td align="right">0.7698618</td>
-</tr>
-<tr class="even">
-<td align="left">schooling</td>
-<td align="right">0.5839717</td>
-</tr>
-<tr class="odd">
-<td align="left">thinnes1_19s</td>
-<td align="right">0.5536858</td>
-</tr>
-<tr class="even">
-<td align="left">infant_dea</td>
-<td align="right">0.4786721</td>
-</tr>
-<tr class="odd">
-<td align="left">alcohol</td>
-<td align="right">0.4627847</td>
-</tr>
-<tr class="even">
-<td align="left">Measles</td>
-<td align="right">0.3262638</td>
-</tr>
-<tr class="odd">
-<td align="left">GDP</td>
-<td align="right">0.2871837</td>
-</tr>
-<tr class="even">
-<td align="left">polio</td>
-<td align="right">0.2586204</td>
-</tr>
-<tr class="odd">
-<td align="left">BMI</td>
-<td align="right">0.2242984</td>
-</tr>
-<tr class="even">
-<td align="left">population</td>
-<td align="right">0.2204558</td>
-</tr>
-<tr class="odd">
-<td align="left">hepatitis_B</td>
-<td align="right">0.1817465</td>
-</tr>
-<tr class="even">
-<td align="left">percent_exp</td>
-<td align="right">0.1327260</td>
-</tr>
-<tr class="odd">
-<td align="left">status_num</td>
-<td align="right">0.0384154</td>
+<td align="left">income composition of resources as smooth terms adjusted by status</td>
+<td align="right">0.7903013</td>
 </tr>
 </tbody>
 </table>
-<p>According to the variable importance plot we have, there is a clear difference in relative influence between variables. There are three most important variables that dominate our boosting model, which means simpler model may have similar performance. By the table for each variable and their corresponding relative influence in Gradient Boosting Model. The variable that is the most influential is ‘income_com’, indicating HDI, with relative influence 55.4197399. Variable ‘total_exp’, indicating health expenditure, has relative influence 1.5076932.</p>
+<p>The model of income composition of resources as smooth terms (M6) has the highest R squared value, which is 0.790346.</p>
+<p><img src="spline.png" width="80%" /></p>
+<p>Looking at the spline model we have, the trend is not curvy, which indicate that a liner model may be preferred to reduce over-fitting.</p>
 <p><br></p>
 <p><br></p>
 </div>
+<div id="comparing-all-linear-models" class="section level2">
+<h2>Comparing all linear models</h2>
+<table>
+<caption>Comparing all R squared of all linear models</caption>
+<thead>
+<tr class="header">
+<th align="left">models</th>
+<th align="right">R_square</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">total expenditure as predictor</td>
+<td align="right">0.0326109</td>
+</tr>
+<tr class="even">
+<td align="left">income composition of resources as predictor</td>
+<td align="right">0.7892844</td>
+</tr>
+<tr class="odd">
+<td align="left">total expenditure and status as predictor</td>
+<td align="right">0.2336129</td>
+</tr>
+<tr class="even">
+<td align="left">income composition of resources and status as predictor</td>
+<td align="right">0.7894635</td>
+</tr>
+</tbody>
+</table>
+<div class="figure">
+<img src="assumptions.png" alt="Checking Assumptions" width="100%" />
+<p class="caption">
+Checking Assumptions
+</p>
 </div>
-<div id="perform-extreme-gradient-boosting" class="section level3">
-<h3>Perform Extreme Gradient Boosting</h3>
-<p>Based on the wrangled data, we perform extreme gradient boosting model to predict life expectancy. We set up a tuning grid that can help us to perform grid search on eta, max_depth, and nrounds. Based on our data, and ‘xgbTree’ method, we train our xgb model on the tune grid. After training, we have our variable importance plot.</p>
-<p><img src="xgbvar.png" width="100%" /></p>
-<p>According to the plot, we can see that the difference of importance between variables are pretty clear. Variable ‘income_com’ is also the most important feature in extreme gradient boosting model. Total expenditure is the 11th important variable.</p>
+<p>According to the all R squared value we have for all linear models, the one with income composition of resources and status as predictor (M8) have the highest R squared. Residual vs fitted plot, QQ plot, scale-location plot, and leverage plot were checked for linear model assumptions. Only the QQ plot shown a deviation exist on the left tail, which means normality is slightly violated. Other assumptions are satisfied. Hence, we do have a good fit since assumptions are mostly satisfied.</p>
+<p><br></p>
+<p><br></p>
+</div>
+<div id="comparing-all-linear-mixed-models" class="section level2">
+<h2>Comparing all linear mixed models</h2>
+<p>To compare all of the linear mixed models we have, we need to compare them by likelihood ratio test (lrtest()). We compare two model with different complexity by the p-value we have in the test. If the p-value is smaller than our significant level 0.05, we are able to reject null hypothesis that simpler model have similar prediction accuracy as more complex model, which means picking complex model is more statistically significant. Hence, by our model construction, the complex model in each pair of test is the model that include developing status variable. Then, we compare (M3, M9) and (M4, M10).</p>
+<table>
+<caption>Linear mixed model comparisons</caption>
+<thead>
+<tr class="header">
+<th align="left">lrtest</th>
+<th align="right">P_value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Likelihhod ratio test between M3 and M9 (Total Expenditure)</td>
+<td align="right">0.000000</td>
+</tr>
+<tr class="even">
+<td align="left">Likelihhod ratio test between M4 and M10 (HDI)</td>
+<td align="right">0.238603</td>
+</tr>
+</tbody>
+</table>
+<p>According to the p-value we have, only adding variable status to total expenditure model has a significant improvement. Hence, M9 and M4 would be compared by AIC with final linear and spline models. They cannot be compared by likelihood ratio test again since they does not sharing same predictors.</p>
+<p><br> <br></p>
+</div>
+<div id="comparing-picked-linear-model-picked-spline-model-and-picked-linear-mixed-models" class="section level2">
+<h2>Comparing picked linear model, picked spline model, and picked linear mixed models</h2>
+<table>
+<caption>Comparing R square for picked linear model and picked spline model</caption>
+<thead>
+<tr class="header">
+<th align="left">models</th>
+<th align="right">R_square</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">linear model</td>
+<td align="right">0.7894635</td>
+</tr>
+<tr class="even">
+<td align="left">spline model</td>
+<td align="right">0.7903460</td>
+</tr>
+</tbody>
+</table>
+<table>
+<caption>Comparing AIC for all Regression model</caption>
+<thead>
+<tr class="header">
+<th align="left">Statistics</th>
+<th align="right">AIC.value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">AIC of picked linear model M8:</td>
+<td align="right">15172.54</td>
+</tr>
+<tr class="even">
+<td align="left">AIC of picked spline model M6:</td>
+<td align="right">15159.38</td>
+</tr>
+<tr class="odd">
+<td align="left">AIC of picked linear mixed model: M4</td>
+<td align="right">15177.39</td>
+</tr>
+<tr class="even">
+<td align="left">AIC of picked linear mixed model: M9</td>
+<td align="right">18542.02</td>
+</tr>
+</tbody>
+</table>
+<p>According to the table we have, the R squared value for both models are pretty close. Though spline model yields better fit based on the score, a linear model may be better choice since the spline model we plotted is very close to a linear line. Choosing a linear model with almost the same wellness of fitting could reduce over-fitting.</p>
+<p>By comparing AIC in Table, though spline model also has the smallest AIC value, most of them have very close AIC. Both our linear mixed model have higher AIC values. Since the linear model is our next-best model and we would like to reduce over-fitting, the linear model with Income composition of resources and status as predictor as predictors is our best model in this section, which means income composition of resources (HDI) has stronger relationship with life expectancy than health expenditure.</p>
+<p><br> <br></p>
+</div>
+<div id="comparing-machine-learning-models-by-mse" class="section level2">
+<h2>Comparing machine learning models by MSE</h2>
+<table>
+<caption>Comparing MSE of all models</caption>
+<thead>
+<tr class="header">
+<th align="left">models</th>
+<th align="right">MSE</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Pruned Regression Tree</td>
+<td align="right">6.978559</td>
+</tr>
+<tr class="even">
+<td align="left">Bagging</td>
+<td align="right">3.682146</td>
+</tr>
+<tr class="odd">
+<td align="left">Random Forest</td>
+<td align="right">3.420492</td>
+</tr>
+<tr class="even">
+<td align="left">Gradient Boosting</td>
+<td align="right">6.890100</td>
+</tr>
+<tr class="odd">
+<td align="left">Extreme Gradient Boosting</td>
+<td align="right">3.557269</td>
+</tr>
+</tbody>
+</table>
+<p>According to the MSE table, we can see that Extreme Gradient Boosting model has the smallest test MSE, which is 3.345888. Pruned Regression Tree has the largest MSE 6.978559, indicating a worse fit. Low test MSE shows high performance and low over-fitting. Hence, we may pick extreme gradient boosting model as our final model to predict life expectancy. <br></p>
+<p><br></p>
+<p><br></p>
+</div>
+<div id="conclusion-and-summary" class="section level1">
+<h1>Conclusion and Summary</h1>
+<p><br></p>
+<div id="answering-research-question" class="section level2">
+<h2>Answering research question</h2>
+<ol style="list-style-type: decimal">
+<li>Is government health expenditure have greater impact on life expectancy than Human Development Index?</li>
+</ol>
+<p>According to the data exploratory plots we have, the relationship between health expenditure and life expectancy is not strong. The models that only contains total expenditure and status highest AIC, which means they fitted badly. However, in most of our plots, the relationship between HDI and life expectancy is strong. We also have pretty well fitted models with HDI as predictor have adjusted R squared over 0.79. Furthermore, in our variable importance plots in machine learning models, HDI is the one of the most important features across all models. Hence, we concluded that HDI have greater impact on life expectancy than the other.</p>
+<ol start="2" style="list-style-type: decimal">
+<li>Does life expectancy also depends on the development status of the country?</li>
+</ol>
+<p>Though including it did improve model performance, adding development status into our model does not have any significant effect according to the model comparison results.</p>
+<ol start="3" style="list-style-type: decimal">
+<li>How to accurately predict life expectancy by social factors?</li>
+</ol>
+<p>Predicting life expectancy by extreme gradient boosting model had the best performance. Variable ‘HIV_AIDS’, ‘income_com’, ‘adult_mo’, and ‘schooling’ are the most important features to predict life expectancy.</p>
+<p><br></p>
+<p><br></p>
+</div>
+<div id="discussion-and-limitation" class="section level2">
+<h2>Discussion and limitation</h2>
+<p>According to the result we have, if the governments aim to increase life expectancy of the population, they should focus on factors that will increase the HDI. Not just spending too much money health development. In may cases, better health treatment and medical technologies does not benefit everyone. For most of the population, even poorer people, their health conditions need much longer time to respond to larger health expenditure than richer people. Additionally, people who would like to search for some counties to stay and try to live longer could choose countries with high HDI, rather than high health expenditure.</p>
+<p>Limitations:<br />
+1. Since we impute NAs by mean value, we may result in biased standard error, variance, and sample mean. Our estimate may be pulled by other observations.</p>
+<ol start="2" style="list-style-type: decimal">
+<li><p>Since we have 16 years of observations per country and we investigate the dataset as a whole, our observations are not totally independent. Also, we ignored the structural difference between countries, like race and climate.</p></li>
+<li><p>Though in model comparison, some spline models have better performance than the linear model, picking a spline model also increase our risk on over-fitting.</p></li>
+<li><p>We only fitted spline models with 3 knots. We should also vary it to compare spline models with different knot numbers.</p></li>
+<li><p>In many of our machine learning models, we can see there are only a few variables that dominate our model, which means, in further study, we could reduce the model complexity but also have similar performance.</p></li>
+</ol>
 <p><br></p>
 <p><br></p>
 </div>

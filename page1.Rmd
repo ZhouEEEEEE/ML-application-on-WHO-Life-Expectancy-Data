@@ -1,5 +1,5 @@
 ---
-title: "JSC370-Final project Data Source and Examination"
+title: "Data Scource and Exploratory Data Analysis"
 author: "Shiyuan Zhou"
 output: 
     html_document:
@@ -8,11 +8,10 @@ output:
 ---
 <br>
 
-<br>
-
 ## Data Source
 
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
+Sys.setenv(LANGUAGE = "en")
 library(data.table)
 library(dtplyr)
 library(dplyr)
@@ -21,45 +20,42 @@ library(mgcv)
 library(zoo)
 library(leaflet)
 library(ggpubr)
+library(lme4)
+library(lmtest)
+library(tidyverse)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+library(gbm)
+library(xgboost)
+library(caret)
 ```
 
-The Data that I used to answer my research question is based on the WHO data and published on Kaggle by Kumar Rajarshi. This dataset includes values social factors of 193 countries from 2000 to 2015 and the life expectancy in age. In our research question, we are aim to compare the impact of government health expenditure and Human Development Index on life expectancy. These two predictors are represent by 'Total expenditure' and 'Income composition of resources' in our dataset. The target is life expectancy. Since we also stated that social factors may have a big difference between developed and developing countries. We sill also include the binary variable 'Status' that idicate the development status of a country. All of these variables will change across years. Here are the variable details.
-
-life expectancy: Life Expectancy in age
-Total expenditure: General government expenditure on health as a percentage of total government expenditure (%)
-Income composition of resources: Human Development Index in terms of income composition of resources (index ranging from 0 to 1)
-Status: Developed or Developing status
+The Data that I used to answer my research question is based on the WHO data and published on Kaggle by Kumar Rajarshi. This dataset includes values social factors of 193 countries from 2000 to 2015 and the life expectancy in age. In our research question, we are aim to compare the impact of government health expenditure and Human Development Index on life expectancy. These two predictors are represent by 'Total expenditure' and 'Income composition of resources' in our data-set. The target is life expectancy. Since we also stated that social factors may have a big difference between developed and developing countries. We sill also include the binary variable 'Status' that indicate the development status of a country. All of these variables will change across years.
 
 Link of data: https://www.kaggle.com/kumarajarshi/life-expectancy-who
 ```{r include=FALSE}
 data <- read.csv('Life Expectancy Data.csv', check.names = F)
 ```
 
-
-
-\newpage
-
 <br>
 
 <br>
 
-## Data Checking
-
-
+## Exploratory Data Analysis
 
 Before answering our research question, we need to do Exploratory Data Analysis first to find issues in our data, clean our data, and make summary statistics, plots, and graphs for our key variables.
 
-### Check number of missing values in each column
-
+### Data Checking
 
 ```{r echo=FALSE}
 num_na <-sapply(data, function(x) sum(length(which(is.na(x)))))
 knitr::kable(data.frame(num_na), caption = "Number of missing values for each variable")
 ```
 
-The table I presented is the number of missing values in each columns. For example, there are 167 missing values in Income composition of resources. We will do the missing value imputation in the next section.
+We have 2937 number of observations and 22 number of variables in our dataset. There are 14 columns contain NAs. There are 167 missing values in Income composition of resources and 225 NAs in total expenditure. The variable with highest amount of NAs is 'Hepatitis B'. We will do the missing value imputation in the next section.
 
-### Check dimensions of our data
+#### Check dimensions of our data
 
 ```{r echo=FALSE}
 s1 <- data %>%
@@ -73,61 +69,167 @@ knitr::kable(s1, caption = "Summery table of the dimensions of our data")
 ```
 We have 2937 number of observations and 22 number of variables in our dataset.
 
-### Check the summary statistics of required numeric variables
+
+#### Check the summary statistics of required numeric variables
 
 ```{r echo=FALSE}
-s2 <- data[, c(4, 14, 21)] %>%
+s2 <- data[, c(4, 5, 14, 16, 21)] %>%
   summary()
 
 knitr::kable(as.array(s2), caption = "Summary statistics of required variables")
 
 ```
-The summary statistics of key variables help us to find the issues and reliability of our data. According to the summary table we get, variable 'Life expectancy' and 'Total expenditure' do not have big issues and in our estimated bound(life expectancy should be greater than 0 and less than 100, total expenditure should be greater than 0 and less than 100 since it represents proportion). However, the variable 'income composition of resources' has minimum values equals to 0. Since this variable indicate human development index, its impossible to have 0 values. According to the worldpopulationreview.com, the country with lowest HDI in 2019 is Niger with 0.394. Hence, 0 income composition should be removed from the data set in order to prevent wrong model fitting.
+Since our data-set contains multiple variables, presenting summary statistics for all the variables is not optimal. Here are the summary statistics of several key variables help us to find the issues and reliability of our data. According to the summary table we get, variable 'Life expectancy' and 'Total expenditure' do not have big issues and in our estimated bound(life expectancy should be greater than 0 and less than 100, total expenditure should be greater than 0 and less than 100 since it represents proportion). However, the variable 'income composition of resources' has minimum values equals to 0. Since this variable indicate human development index, its impossible to have 0 values, which means we need to remove those observations. According to the worldpopulationreview.com, the country with lowest HDI in 2019 is Niger with 0.394. Hence, 0 income composition should be removed from the data set in order to prevent wrong model fitting. Other variables' reliability were also checked.
 
 ```{r echo=FALSE}
 data <- data[ which(data$ `Income composition of resources` > 0.0), ]
+
+dt <- data.table(data)
+
+data_eda <- dt[, life_expectancy_level := case_when(dt[, `Life expectancy`] < 50 ~ "low", 
+                               dt[, `Life expectancy`] <= 65 ~ "medium",
+                               dt[, `Life expectancy`] <= 80 ~ "high",
+                               dt[, `Life expectancy`] > 80 ~ "very high")
+      ]
+data_eda <- data.frame(data_eda)
+data_eda$life_expectancy_level <- factor(data_eda$life_expectancy_level, levels = c("low", "medium", "high", "very high"))
+
 ```
 
-We removed the observations with 0 income composition and the new summary statistics is as followed.
+
+#### Check Distribution of required variables
+
+The distribution of several main variables are checked base on their plotted histograms.
+
+```{r warning=FALSE, echo=FALSE, caption = "Check Distribution of required variables", fig.width=10.5, fig.height=4.5, fig.pos = "H"}
+le <- ggplot(data = data_eda) +
+ geom_histogram(mapping = aes(x = Life.expectancy), bins = 40, fill = "#826bc6")  +
+ labs(x = "life expectancy in age", title = "Histogram of life expectancy")
+# 
+# hs1 <- ggplot(data = data_eda) + 
+#  geom_histogram(mapping = aes(x = data_eda$`Total expenditure`), bins = 40, fill = factor(data_eda$life_expectancy_level))  +
+#  labs(x = "total expenditure", title = "Histogram of total health expenditure")
+# 
+# hs2 <- ggplot(data = data_eda) + 
+#  geom_histogram(mapping = aes(x = `Income composition of resources`), bins = 40, fill = factor(data_eda$life_expectancy_level))  +
+#  labs(x = "Income composition of resources(ICR)", title = "Histogram of ICR")
+
+
+hdi <- ggplot(data = data_eda, aes(x=Income.composition.of.resources, fill = life_expectancy_level)) + 
+ geom_histogram(bins = 60)  +
+ labs(x = "total expenditure", title = "Histogram of HDI") + 
+  scale_fill_manual(values = c("low" = "#c3cfce",
+                               "medium" = "#9c93c9",
+                               "high" = "#7557c4",
+                               "very high" = "#4107bd"))+
+  theme(legend.position="none")
+
+am <- ggplot(data = data_eda, aes(x=Adult.Mortality, fill = life_expectancy_level)) + 
+ geom_histogram(bins = 60)  +
+ labs(x = "total expenditure", title = "Histogram of adult mortality") + 
+  scale_fill_manual(values = c("low" = "#c3cfce",
+                               "medium" = "#9c93c9",
+                               "high" = "#7557c4",
+                               "very high" = "#4107bd"))+
+  theme(legend.position="none")
+
+BMI <- ggplot(data = data_eda, aes(x=BMI, fill = life_expectancy_level)) + 
+ geom_histogram(bins = 60)  +
+ labs(x = "total expenditure", title = "Histogram of BMI") + 
+  scale_fill_manual(values = c("low" = "#c3cfce",
+                               "medium" = "#9c93c9",
+                               "high" = "#7557c4",
+                               "very high" = "#4107bd"))+
+  theme(legend.position="none")
+
+# ba <- ggplot(data = data_eda) + 
+#  geom_bar(mapping = aes(x = `Status`), fill = factor(data_eda$life_expectancy_level)) +
+#  labs(title = "Barchart of development status") +
+#   theme_light()
+
+st <- ggplot(data = data_eda, aes(x=Status, fill = life_expectancy_level)) + 
+ geom_bar(bins = 60)  +
+ labs(x = "total expenditure", title = "Bar plot of developing status") + 
+  scale_fill_manual(values = c("low" = "#c3cfce",
+                               "medium" = "#9c93c9",
+                               "high" = "#7557c4",
+                               "very high" = "#4107bd"))+
+  theme(legend.position="none")
+
+te <- ggplot(data = data_eda, aes(x=Total.expenditure, fill = life_expectancy_level)) + 
+ geom_histogram(bins = 60)  +
+ labs(x = "total expenditure", title = "Histogram of total expenditure") + 
+  scale_fill_manual(values = c("low" = "#c3cfce",
+                               "medium" = "#9c93c9",
+                               "high" = "#7557c4",
+                               "very high" = "#4107bd")) +
+  theme(legend.position="bottom")
+
+ggarrange(le, hdi, am, BMI, te, st, ncol = 3, nrow = 2)
+
+
+```
+To have more insights on their relationship with life expectancy, we also made variable 'life_expectancy_level' for different levels of ages only for EDA. The distribution of life expectancy and total expenditure is quite normal but life expectancy is left-skewed. For HDI(Income composition of resources) and BMI, we can see that, higher level of life expectancy concentrated on higher HDI, which may indicate a positive relationship. For adult mortality records, low mortality may have higher life expectancy as the distribution of color goes darker from right to left. FUrthermore, developed country tend to have higher life expectancy. There were no too much clear relationship in other variables.
+
+### Data Wranggling
+
+```{r echo=FALSE, warning=FALSE}
+for(i in 1:ncol(data)) {
+  data[ , i][is.na(data[ , i])] <- mean(data[ , i], na.rm = TRUE)
+}
+```
+
+#### NA Imputation and Create New Variable
+
+We handled the missing values by imputation. We use mean value of current column to impute by for looping each column.  
+To do further data exploration on different types of plots, we need both numeric and categorical 'Total expenditure' and 'Income composition of resources'. Converting current numeric variables to categorical variables helps us on stacked histograms, statistical summary graph, and etc. In many statistical research on social factors, health expenditure and HDI are always represented by different levels.
+
+Create a new categorical variable named "expenditure_level" using total expenditure on health of a country. (rare total expenditure < 3; low total expenditure 3-5; mild total expenditure 5-9; high total expenditure > 9) and a new categorical variable named "hdi_level" indicating level of income composition of resources of countries(low income composition < 0.55; medium income composition 0.55-0.7; high income composition 0.7-0.8; very high income composition > 0.8). Additionally, we should use factor() function to give our levels an order for future convenience.
+
+Since we also need to perform gradient boosting and extreme gradient boosting to predict life expectancy based on our dataset. Hence, we need to make character variables into numeric variables since boosting model cannot apply to categorical variables. By looking at the dataset, we found that variable 'Status' and 'Country' are categorical. We do not need variable 'Country' in machine learning model fitting as we investigate the dataset as a whole: each country's value in each year is a single observation. Variable 'Status' is binary. Hence, we only need to convert it into 1 and 0 and create new variables 'status_num'.
+
+We also found the range of variable 'GDP', 'Percentage Expenditure' and 'Population' are much larger than other variables, which means we need to scale them. If there is a big difference in the range of variables, higher ranging numbers may have superiority in model fitting.
+
 
 ```{r echo=FALSE}
-snew <- data[, c(4, 14, 21)] %>%
-  summary()
+dt <- data.table(data)
 
-knitr::kable(as.array(snew), caption = "New summary statistics of required variables")
+dta <- dt[, expenditure_level := case_when(dt[, `Total expenditure`] < 3 ~ "low", 
+                               dt[, `Total expenditure`] <= 5 ~ "medium",
+                               dt[, `Total expenditure`] <= 9 ~ "high",
+                               dt[, `Total expenditure`] > 9 ~ "very high")
+      ]
+
+dt1 <- dta[, hdi_level := case_when(dta[, `Income composition of resources`] < 0.55 ~ "low", 
+                               dta[, `Income composition of resources`] <= 0.7 ~ "medium",
+                               dta[, `Income composition of resources`] <= 0.8 ~ "high",
+                               dta[, `Income composition of resources`] > 0.8 ~ "very high")]
+
+dt1$expenditure_level <- factor(dt1$expenditure_level, levels = c("low", "medium", "high", "very high"))
+dt1$hdi_level <- factor(dt1$hdi_level, levels = c("low", "medium", "high", "very high"))
+dt1$status_num <- ifelse(dt1$Status=="Developed",1,0)
+
+dt1$GDP <- scale(dt1$GDP)
+dt1$`percentage expenditure` <- scale(dt1$`percentage expenditure`)
+dt1$Population <- scale(dt1$Population)
+
+sexp <- dt1 %>% group_by(expenditure_level) %>%
+  summarise(
+    min_exp = min(`Total expenditure`, na.rm = TRUE),
+    max_exp = max(`Total expenditure`, na.rm = TRUE),
+    count = n()
+  ) %>% arrange(expenditure_level)
+knitr::kable(sexp, caption = "Summery table of min total expenditure, max total expenditure, and number of observations for each level of total expenditure")
+
+shdi <- dt1 %>% group_by(hdi_level) %>%
+  summarise(
+    min_exp = min(`Income composition of resources`, na.rm = TRUE),
+    max_exp = max(`Income composition of resources`, na.rm = TRUE),
+    count = n()
+  ) %>% arrange(hdi_level)
+knitr::kable(shdi, caption = "Summery table of min income composition of resources, max income composition of resources, and number of observations for each level of HDI
+")
 
 ```
 
-
-\newpage
-
-
-### Check Distribution of required variables
-
-We need to check the distribution of our variables. This helps to determine outliers, skewness, and whether it is appropriate to fit the model.
-
-```{r warning=FALSE, echo=FALSE, caption = "Check Distribution of required variables"}
-hs <- ggplot(data = data) + 
- geom_histogram(mapping = aes(x = `Life expectancy`), bins = 40, fill = "#8250C4")  +
- labs(x = "life expectancy in age", title = "Histogram of life expectancy")
-
-hs1 <- ggplot(data = data) + 
- geom_histogram(mapping = aes(x = `Total expenditure`), bins = 40, fill = "#8250C4")  +
- labs(x = "total expenditure", title = "Histogram of total health expenditure")
-
-hs2 <- ggplot(data = data) + 
- geom_histogram(mapping = aes(x = `Income composition of resources`), bins = 40, fill = "#8250C4")  +
- labs(x = "Income composition of resources(ICR)", title = "Histogram of ICR")
-
-ba <- ggplot(data = data) + 
- geom_bar(mapping = aes(x = `Status`), fill = "#118DFF") +
- labs(title = "Barchart of development status") +
-  theme_light()
-
-ggarrange(hs, hs1, hs2, ba, ncol = 2, nrow = 2)
-
-```
-According to the histograms we have for those three numeric variables, their distribution is almost normal, indicating linear model may be better options. However, there are also several issues. Firstly, the distribution of ICR is bimodal, the distribution of life expectancy is left skewed, and the distribution of total health expenditure is right-skewed. Secondly, the peak value of life expectancy and health expenditure have a very high count, which may pull our model become more centralized. Thirdly, according to the bar chart, the number of  developing county is much more that that of developed country, which means, if we add status variable to our model, the data of developing country may pull our model and become biased.
-
-<br>
 <br>
