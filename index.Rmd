@@ -1,12 +1,15 @@
 ---
-title: "JSC370-Final Main Page"
+title: "Main"
 author: "Shiyuan Zhou"
 output: 
-    html_document:
-        toc: TRUE
-        toc_float: TRUE
+ html_document:
+  toc: True
+  toc_float: True
 ---
 
+```{r include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 <br>
 
@@ -31,24 +34,13 @@ Git-hub repo: https://github.com/ZhouEEEEEE/JSC370-Final-Project
 -   3\. What are the important features that could help to predict life expectancy?
 
 <br>
+
 <br>
 
 ## Download Full PDF of My Final Project
 
-Click the button to download!
+You may click the button on the top right of my page to download the full pdf version of my final project.
 
-```{r message=FALSE, echo=FALSE, warning=FALSE}
-library(downloadthis)
-## Link in Github repo
-download_link(
-  link = "https://github.com/ZhouEEEEEE/JSC370-Final-Project/raw/main/FP%20rmd%20file%20and%20pdf/370-Final-Project.pdf",
-  button_label = "Download Full Project PDF",
-  button_type = "success",
-  has_icon = TRUE,
-  icon = "fa-file-pdf-o",
-  self_contained = FALSE
-)
-```
 <br>
 
 <br>
@@ -61,7 +53,7 @@ download_link(
 I will showcase a few interactive visuals in this page
 <br>
 
-```{r setup, message=FALSE, echo=FALSE, warning=FALSE}
+```{r message=FALSE, echo=FALSE, warning=FALSE}
 library(dplyr)
 library(data.table)
 library(tidyverse)
